@@ -95,6 +95,39 @@
   .status.done{color:var(--gold)}
   .overflow-note{grid-column:1/-1;margin:-8px 0 0;font-size:14px;color:var(--grey)}
 
+  /* ── 16:9 무대 — 빔프로젝터 한 화면에 전부 담깁니다 ── */
+  .recent{display:none}
+  @media (min-width:860px){
+    body.stage-mode{overflow:hidden;height:100vh}
+    body.stage-mode .wrap{max-width:none;padding:0;height:100vh}
+    body.stage-mode #view-board{position:fixed;inset:0;display:grid;place-items:center}
+    body.stage-mode .stage{
+      width:1600px;height:900px;flex:none;transform-origin:center center;
+      display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:18px;padding:24px 30px
+    }
+    body.stage-mode .masthead{flex-wrap:nowrap;align-items:center;gap:36px}
+    body.stage-mode .eyebrow{margin-bottom:12px}
+    body.stage-mode .wordmark{font-size:44px;line-height:1.16}
+    body.stage-mode .tagline{display:none}
+    body.stage-mode .meter{flex:1 1 auto;margin-top:0;grid-template-columns:auto 1fr;gap:10px 24px}
+    body.stage-mode .tally b{font-size:44px}
+    body.stage-mode .status{font-size:20px}
+    body.stage-mode .recent{
+      display:block;grid-column:1/-1;margin:0;font-size:16px;color:var(--grey);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    body.stage-mode .qr-card{width:176px;gap:7px}
+    body.stage-mode .qr-box{width:148px;height:148px}
+    body.stage-mode .qr-box canvas,body.stage-mode .qr-box img{width:148px!important;height:148px!important}
+    body.stage-mode .qr-sub,body.stage-mode .qr-edit,body.stage-mode .qr-go{display:none}
+    body.stage-mode .screen{
+      margin-top:0;min-height:0;width:100%;aspect-ratio:480/176;max-height:100%;
+      margin-inline:auto;align-self:center;overflow:hidden
+    }
+    body.stage-mode .screen canvas{width:100%;height:100%;object-fit:contain}
+    body.stage-mode .below{display:none}
+  }
+
   /* ── 벽 ── */
   .wall-head{margin-top:52px;border-top:4px solid #262640;padding-top:22px;
              display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
@@ -170,11 +203,19 @@
 
 <!-- ══════════ 전광판 ══════════ -->
 <div class="view" id="view-board">
+ <div class="stage" id="stage-box">
   <header class="masthead">
     <div>
       <p class="eyebrow">2026 EVANGELISM</p>
       <h1 class="wordmark">WELCOME<br><span>HOME</span></h1>
       <p class="tagline">초대장 한 장이 코인 하나를 켭니다. 마흔 개가 켜지면 아들이 아버지 품에 안깁니다.</p>
+    </div>
+    <div class="meter">
+      <p class="tally"><b id="tally-n">0</b><span id="tally-of">/ 40</span></p>
+      <div class="track"><i id="track-fill"></i></div>
+      <p class="status" id="status">첫 번째 초대를 기다리고 있습니다.</p>
+      <p class="recent" id="recent"></p>
+      <p class="overflow-note" id="overflow-note" hidden></p>
     </div>
     <div class="qr-card">
       <div class="qr-box" id="qr"></div>
@@ -186,7 +227,7 @@
   </header>
 
   <div class="screen" id="screen">
-    <canvas id="stage" width="384" height="176" role="img"
+    <canvas id="stage" width="480" height="176" role="img"
             aria-label="왼쪽 끝의 아들이 오른쪽 끝의 집을 향해 걸어갑니다. 집 앞에는 아버지가 팔을 벌리고 서 있고, 길 위의 코인은 접수된 초대장 수만큼 켜집니다."></canvas>
     <div class="hud">
       <span>INVITES <b id="hud-n">00</b>/<b id="hud-goal">40</b></span>
@@ -195,15 +236,11 @@
     <div class="banner">WELCOME HOME!</div>
   </div>
 
-  <div class="meter">
-    <p class="tally"><b id="tally-n">0</b><span id="tally-of">/ 40</span></p>
-    <div class="track"><i id="track-fill"></i></div>
-    <p class="status" id="status">첫 번째 초대를 기다리고 있습니다.</p>
-    <p class="overflow-note" id="overflow-note" hidden></p>
-  </div>
 
   <p class="alert" id="board-alert" hidden></p>
+ </div>
 
+ <div class="below">
   <div class="wall-head">
     <h2>PRAYER LIST</h2>
     <p id="wall-sub">이름과 기도제목은 코인 순서대로 놓입니다.</p>
@@ -214,6 +251,7 @@
     <span>“아직도 거리가 먼데 아버지가 그를 보고 측은히 여겨 달려가 목을 안고 입을 맞추니” — 누가복음 15:20</span>
     <span id="board-link-hint"></span>
   </footer>
+ </div>
 </div>
 
 <!-- ══════════ 초대장 ══════════ -->
@@ -271,6 +309,11 @@
      SERVER_URL 에 Google Apps Script 웹앱 주소를 넣으면 그 서버에 저장됩니다.
      (README.md 참고. ?server=<주소> 로 접속해도 이 기기에 저장됩니다.)          */
   var SERVER_URL = "";
+
+  /* Firebase Firestore — 콘솔에서 만든 프로젝트 ID 와 웹 API 키를 넣으세요.
+     (README.md 참고. 주소 뒤에 ?fb=프로젝트ID,API키 를 붙여 접속해도 이 기기에 저장됩니다.) */
+  var FIREBASE = { projectId: "", apiKey: "" };
+
   var DEFAULT_GOAL = 40;
 
   var $ = function(id){ return document.getElementById(id); };
@@ -279,7 +322,13 @@
   try {
     if (qs.get("server")) localStorage.setItem("wh.server", qs.get("server"));
     if (!SERVER_URL) SERVER_URL = localStorage.getItem("wh.server") || "";
+    if (qs.get("fb")) localStorage.setItem("wh.fb", qs.get("fb"));
+    if (!FIREBASE.projectId){
+      var saved = (localStorage.getItem("wh.fb") || "").split(",");
+      if (saved.length === 2){ FIREBASE.projectId = saved[0].trim(); FIREBASE.apiKey = saved[1].trim(); }
+    }
   } catch(e){}
+  var useFirebase = !!(FIREBASE.projectId && FIREBASE.apiKey);
 
   var state = { goal: DEFAULT_GOAL, items: [], ready:false, lastId:null, lastN:0, shareUrl:"" };
 
@@ -433,10 +482,10 @@
   Object.keys(SPR).forEach(function(k){ IMG[k] = bake(SPR[k]); });
 
   /* ═══════════ 무대 ═══════════ */
-  var W = 384, H = 176, GY = 138;          // 가상 해상도 / 지면
-  var SON_X0 = 16, SON_X1 = 262;           // 아들 이동 구간
-  var DAD_X = 280;                         // 아버지 위치
-  var COIN_X0 = 18, COIN_SPAN = 234, COIN_Y = 74;
+  var W = 480, H = 176, GY = 138;          // 가상 해상도 / 지면
+  var SON_X0 = 16, SON_X1 = 358;           // 아들 이동 구간
+  var DAD_X = 376;                         // 아버지 위치
+  var COIN_X0 = 18, COIN_SPAN = 330, COIN_Y = 74;
 
   var stage = $("stage"), ctx = stage.getContext("2d");
   ctx.imageSmoothingEnabled = false;
@@ -461,11 +510,12 @@
     }
 
     /* 별 */
-    [[22,7],[58,17],[96,5],[134,22],[170,9],[208,26],[246,6],[288,19],[324,11],[360,24],[44,33],[190,36],[306,31]]
+    [[22,7],[58,17],[96,5],[134,22],[170,9],[208,26],[246,6],[288,19],[324,11],[360,24],[44,33],
+     [190,36],[306,31],[396,8],[430,21],[462,12],[412,35]]
       .forEach(function(s2){ px(c,s2[0],s2[1],1,1,"#FCFCFC"); });
 
     /* 지는 해 — 언덕 뒤로 내려앉습니다 */
-    var SUNX = 168, SUNY = 100, SR = 13;
+    var SUNX = 208, SUNY = 100, SR = 14;
     for (var sy = -SR; sy <= SR; sy++){
       var half = Math.round(Math.sqrt(SR*SR - sy*sy));
       px(c, SUNX-half, SUNY+sy, half*2, 1, sy < -4 ? "#FCE0A8" : "#F8D060");
@@ -475,7 +525,7 @@
     function cloud(x,y){
       px(c,x+3,y,8,3,"#FCFCFC"); px(c,x,y+3,14,3,"#FCFCFC"); px(c,x+2,y+6,10,2,"#E8E8F8");
     }
-    cloud(38,26); cloud(214,16); cloud(300,36); cloud(122,46);
+    cloud(38,26); cloud(214,16); cloud(330,36); cloud(122,46); cloud(412,22);
 
     /* 둥근 언덕 */
     function hill(cx,w,h,col,hi){
@@ -488,7 +538,8 @@
     }
     hill(52,96,16,"#006818","#00883C");
     hill(196,132,22,"#005410","#006818");
-    hill(292,88,13,"#006818","#00883C");
+    hill(330,112,15,"#006818","#00883C");
+    hill(444,74,11,"#005410","#006818");
 
     /* 지면 */
     px(c,0,GY,W,4,"#00A844");
@@ -503,37 +554,37 @@
     function bush(x){
       px(c,x+2,GY-4,6,4,"#00A844"); px(c,x,GY-2,10,2,"#00A844"); px(c,x+3,GY-5,3,1,"#58D854");
     }
-    bush(78); bush(158); bush(238);
+    bush(78); bush(158); bush(252); bush(330);
 
     /* 집 — 굴뚝, 지붕(아래로 넓어짐), 벽 */
-    px(c,352,50,9,22,"#8C4018");
-    px(c,350,48,13,4,"#A85028");
+    px(c,448,50,9,22,"#8C4018");
+    px(c,446,48,13,4,"#A85028");
     for (var ry=0; ry<24; ry++){
       var w2 = Math.min(26 + ry*3, 92);
-      px(c, 336-(w2>>1), 60+ry, w2, 1, ry<2 ? "#F85838" : "#D82800");
-      px(c, 336-(w2>>1), 60+ry, 1, 1, "#A01800");
-      px(c, 336+(w2>>1)-1, 60+ry, 1, 1, "#A01800");
+      px(c, 432-(w2>>1), 60+ry, w2, 1, ry<2 ? "#F85838" : "#D82800");
+      px(c, 432-(w2>>1), 60+ry, 1, 1, "#A01800");
+      px(c, 432+(w2>>1)-1, 60+ry, 1, 1, "#A01800");
     }
-    px(c,288,82,96,3,"#8C4018");                  // 처마
-    px(c,296,85,80,GY-85,"#E8A058");              // 벽
-    for (var wy=87; wy<GY; wy+=9) px(c,296,wy,80,1,"#C87C28");
-    px(c,296,85,2,GY-85,"#8C4018"); px(c,374,85,2,GY-85,"#8C4018");
+    px(c,384,82,96,3,"#8C4018");                  // 처마
+    px(c,392,85,80,GY-85,"#E8A058");              // 벽
+    for (var wy=87; wy<GY; wy+=9) px(c,392,wy,80,1,"#C87C28");
+    px(c,392,85,2,GY-85,"#8C4018"); px(c,470,85,2,GY-85,"#8C4018");
   }
 
   function drawHouseLights(c, lit){
-    [304,352].forEach(function(x){                // 창문
+    [400,448].forEach(function(x){                // 창문
       px(c,x,94,16,14, lit ? "#FCE0A8" : "#3C5CD8");
       px(c,x,94,16,1,"#8C4018"); px(c,x,107,16,1,"#8C4018");
       px(c,x+7,94,2,14,"#8C4018");
     });
     if (lit){                                     // 열린 문 + 쏟아지는 빛
-      px(c,328,110,18,GY-110,"#FCE0A8");
-      px(c,326,108,22,2,"#8C4018");
-      for (var i=0;i<14;i++) px(c, 324-i, GY+i, 30+i*2, 1, i%2 ? "#F8D878" : "#FCE0A8");
+      px(c,424,110,18,GY-110,"#FCE0A8");
+      px(c,422,108,22,2,"#8C4018");
+      for (var i=0;i<14;i++) px(c, 420-i, GY+i, 30+i*2, 1, i%2 ? "#F8D878" : "#FCE0A8");
     } else {
-      px(c,328,110,18,GY-110,"#5C3010");
-      px(c,326,108,22,2,"#8C4018");
-      px(c,342,124,2,2,"#F8B800");
+      px(c,424,110,18,GY-110,"#5C3010");
+      px(c,422,108,22,2,"#8C4018");
+      px(c,438,124,2,2,"#F8B800");
     }
   }
 
@@ -657,7 +708,12 @@
     $("wall-sub").textContent = state.items.length + "개의 초대장이 도착했습니다.";
   }
 
-  function renderAll(){ renderMeter(); renderWall(); }
+  function renderRecent(){
+    var last = state.items.slice(-4).reverse().map(function(it){ return it.name; });
+    $("recent").textContent = last.length ? "최근 초대 · " + last.join("  ·  ") : "";
+  }
+
+  function renderAll(){ renderMeter(); renderWall(); renderRecent(); }
 
   /* ═══════════ 저장소 ═══════════
      1순위 REST 서버(여러 기기 공유) → 2순위 Artifact DB → 3순위 이 기기 전용    */
@@ -681,6 +737,73 @@
     n.classList.toggle("bad", !!bad);
     if (!msg){ n.hidden = true; n.textContent = ""; return; }
     n.hidden = false; n.textContent = msg;
+  }
+
+  /* ── Firebase Firestore (REST) ──
+     로그인 없이 누구나 제출할 수 있어야 해서 SDK 대신 REST + 폴링을 씁니다.
+     API 키는 공개돼도 되는 값이고, 실제 보호는 firestore.rules 가 합니다. */
+  function fbDocs(){
+    return "https://firestore.googleapis.com/v1/projects/" + FIREBASE.projectId +
+           "/databases/(default)/documents";
+  }
+  function fbKey(){ return "key=" + encodeURIComponent(FIREBASE.apiKey); }
+
+  function fbCheck(j){
+    if (j && j.error) throw new Error(j.error.message || "firestore");
+    return j;
+  }
+  function fbParse(doc){
+    var f = doc.fields || {};
+    function str(k){ return (f[k] && f[k].stringValue) || ""; }
+    return {
+      id: String(doc.name || "").split("/").pop(),
+      name: str("name"), prayer: str("prayer"), sender: str("sender"),
+      ts: f.ts ? Number(f.ts.integerValue || f.ts.doubleValue || 0) : 0
+    };
+  }
+
+  function fbLoadConfig(){
+    fetch(fbDocs() + "/config/campaign?" + fbKey())
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.fields) return;              // 설정 문서는 없어도 됩니다
+        var g = j.fields.goal ? Number(j.fields.goal.integerValue) : 0;
+        if (g >= 1 && g <= 200 && g !== state.goal){ state.goal = g; renderAll(); }
+        var su = j.fields.shareUrl && j.fields.shareUrl.stringValue;
+        if (su && su !== state.shareUrl){ state.shareUrl = su; drawQR(); }
+      })
+      .catch(function(){});
+  }
+
+  function fbPoll(){
+    fetch(fbDocs() + "/invites?pageSize=300&" + fbKey())
+      .then(function(r){ return r.json(); })
+      .then(fbCheck)
+      .then(function(j){
+        setItems((j.documents || []).map(fbParse));
+        alertBoard("");
+      })
+      .catch(function(e){
+        alertBoard("Firestore 와 연결하지 못했습니다 — " + short(e) + " 다시 시도하는 중…", true);
+      });
+  }
+
+  function fbAdd(rec){
+    return fetch(fbDocs() + "/invites?" + fbKey(), {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: {
+        name:   { stringValue: rec.name },
+        prayer: { stringValue: rec.prayer },
+        sender: { stringValue: rec.sender || "" },
+        ts:     { integerValue: String(Date.now()) }
+      }})
+    }).then(function(r){ return r.json(); }).then(fbCheck)
+      .then(function(j){ return String(j.name || "").split("/").pop(); });
+  }
+
+  function fbDelete(id){
+    return fetch(fbDocs() + "/invites/" + encodeURIComponent(id) + "?" + fbKey(), { method: "DELETE" })
+      .then(function(r){ return r.json(); }).then(fbCheck);
   }
 
   /* ── REST (Google Apps Script) ── */
@@ -717,6 +840,9 @@
   }
 
   Store.add = function(rec){
+    if (Store.mode === "firebase")
+      return fbAdd(rec).then(function(id){ fbPoll(); return id; });
+
     if (Store.mode === "rest")
       return restCall({ action:"add", name:rec.name, prayer:rec.prayer, sender:rec.sender })
         .then(function(j){ restPoll(); return j.id; });
@@ -735,6 +861,9 @@
   };
 
   Store.remove = function(id){
+    if (Store.mode === "firebase")
+      return fbDelete(id).then(function(){ fbPoll(); });
+
     if (Store.mode === "rest")
       return restCall({ action:"delete", id:id }).then(function(){ restPoll(); });
     if (Store.mode === "db")
@@ -745,6 +874,14 @@
   };
 
   function startStore(){
+    if (useFirebase){
+      Store.mode = "firebase";
+      fbLoadConfig();
+      fbPoll();
+      setInterval(fbPoll, 4000);
+      window.addEventListener("focus", fbPoll);
+      return;
+    }
     if (SERVER_URL){
       Store.mode = "rest";
       restPoll();
@@ -780,8 +917,13 @@
   function fallbackLocal(){
     Store.mode = "local";
     setItems(localRead());
-    var msg = "데모 모드 — 초대가 이 기기에만 저장됩니다. 여러 사람이 함께 쓰려면 서버 주소를 연결해주세요.";
+    var msg = "데모 모드 — 초대가 이 기기에만 저장됩니다. 여러 사람이 각자 폰으로 참여하려면 Firebase 또는 Apps Script 를 연결해주세요. (README.md)";
     alertBoard(msg); alertForm(msg);
+  }
+
+  function short(e){
+    var m = (e && e.message) ? String(e.message) : "";
+    return m.length > 120 ? m.slice(0, 120) + "…" : m;
   }
 
   function errText(e){
@@ -790,6 +932,7 @@
     if (c === "resource_exhausted") return "요청이 몰리고 있습니다. 잠시 후 다시 시도해주세요.";
     if (c === "invalid_argument") return "입력을 저장할 수 없습니다. 내용을 줄여서 다시 시도해주세요.";
     if (c === "revoked" || c === "not_granted") return "이 화면에서는 저장할 수 없습니다. 발행된 주소로 열어주세요.";
+    if (e && e.message) return "저장에 실패했습니다 — " + short(e);
     return "저장에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.";
   }
 
@@ -832,10 +975,22 @@
   });
 
   /* ═══════════ 화면 전환 ═══════════ */
+  function fitStage(){
+    var box = $("stage-box");
+    var stageMode = window.matchMedia("(min-width:860px)").matches &&
+                    location.hash.replace("#","") !== "invite";
+    document.body.classList.toggle("stage-mode", stageMode);
+    box.style.transform = stageMode
+      ? "scale(" + Math.min(window.innerWidth / 1600, window.innerHeight / 900).toFixed(4) + ")"
+      : "";
+  }
+  window.addEventListener("resize", fitStage);
+
   function route(){
     var invite = location.hash.replace("#","") === "invite";
     $("view-board").hidden = invite;
     $("view-invite").hidden = !invite;
+    fitStage();
     window.scrollTo(0,0);
   }
   window.addEventListener("hashchange", route);
@@ -927,6 +1082,7 @@
   /* ═══════════ 시작 ═══════════ */
   function start(){
     route();
+    fitStage();
     paintBackground();
     renderAll();
     drawQR();
