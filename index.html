@@ -310,6 +310,10 @@
      (README.md 참고. ?server=<주소> 로 접속해도 이 기기에 저장됩니다.)          */
   var SERVER_URL = "";
 
+  /* Supabase — 프로젝트 URL 과 anon public 키를 넣으세요.
+     (README.md 참고. 주소 뒤에 ?sb=프로젝트URL,anon키 를 붙여도 이 기기에 저장됩니다.) */
+  var SUPABASE = { url: "", anonKey: "" };
+
   /* Firebase Firestore — 콘솔에서 만든 프로젝트 ID 와 웹 API 키를 넣으세요.
      (README.md 참고. 주소 뒤에 ?fb=프로젝트ID,API키 를 붙여 접속해도 이 기기에 저장됩니다.) */
   var FIREBASE = { projectId: "", apiKey: "" };
@@ -328,6 +332,14 @@
       if (saved.length === 2){ FIREBASE.projectId = saved[0].trim(); FIREBASE.apiKey = saved[1].trim(); }
     }
   } catch(e){}
+  try {
+    if (qs.get("sb")) localStorage.setItem("wh.sb", qs.get("sb"));
+    if (!SUPABASE.url){
+      var sb = (localStorage.getItem("wh.sb") || "").split(",");
+      if (sb.length === 2){ SUPABASE.url = sb[0].trim(); SUPABASE.anonKey = sb[1].trim(); }
+    }
+  } catch(e){}
+  var useSupabase = !!(SUPABASE.url && SUPABASE.anonKey);
   var useFirebase = !!(FIREBASE.projectId && FIREBASE.apiKey);
 
   var state = { goal: DEFAULT_GOAL, items: [], ready:false, lastId:null, lastN:0, shareUrl:"" };
@@ -739,6 +751,70 @@
     n.hidden = false; n.textContent = msg;
   }
 
+  /* ── Supabase (PostgREST) ──
+     anon 키는 페이지에 공개돼도 되는 값입니다. 실제 보호는 테이블의 RLS 정책이 합니다.
+     Realtime 대신 4초 폴링을 씁니다 — 웹소켓 없이 어디서나 똑같이 동작합니다. */
+  function sbRest(path){ return SUPABASE.url.replace(/\/+$/, "") + "/rest/v1/" + path; }
+  function sbHead(extra){
+    var h = { apikey: SUPABASE.anonKey, Authorization: "Bearer " + SUPABASE.anonKey };
+    if (extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
+    return h;
+  }
+  function sbRows(j){
+    if (Array.isArray(j)) return j;
+    throw new Error((j && (j.message || j.hint || j.error)) || "supabase");
+  }
+
+  function sbLoadConfig(){
+    fetch(sbRest("config?select=goal,share_url&key=eq.campaign"), { headers: sbHead() })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!Array.isArray(j) || !j.length) return;      // 설정 행은 없어도 됩니다
+        var g = Number(j[0].goal);
+        if (g >= 1 && g <= 200 && g !== state.goal){ state.goal = g; renderAll(); }
+        if (j[0].share_url && j[0].share_url !== state.shareUrl){
+          state.shareUrl = j[0].share_url; drawQR();
+        }
+      })
+      .catch(function(){});
+  }
+
+  function sbPoll(){
+    fetch(sbRest("invites?select=id,name,prayer,sender,ts&order=ts.asc&limit=300"), { headers: sbHead() })
+      .then(function(r){ return r.json(); })
+      .then(sbRows)
+      .then(function(rows){
+        setItems(rows.map(function(r){
+          return { id: String(r.id), name: r.name || "", prayer: r.prayer || "",
+                   sender: r.sender || "", ts: Number(r.ts) || 0 };
+        }));
+        alertBoard("");
+      })
+      .catch(function(e){
+        alertBoard("Supabase 와 연결하지 못했습니다 — " + short(e) + " 다시 시도하는 중…", true);
+      });
+  }
+
+  function sbAdd(rec){
+    return fetch(sbRest("invites"), {
+      method: "POST",
+      headers: sbHead({ "Content-Type": "application/json", Prefer: "return=representation" }),
+      body: JSON.stringify([{ name: rec.name, prayer: rec.prayer, sender: rec.sender || "", ts: Date.now() }])
+    }).then(function(r){ return r.json(); }).then(sbRows)
+      .then(function(rows){
+        if (!rows.length) throw new Error("접수 결과가 비어 있습니다.");
+        return String(rows[0].id);
+      });
+  }
+
+  function sbDelete(id){
+    return fetch(sbRest("invites?id=eq." + encodeURIComponent(id)), { method: "DELETE", headers: sbHead() })
+      .then(function(r){
+        if (r.ok) return;
+        return r.json().then(function(j){ throw new Error((j && j.message) || "삭제 실패"); });
+      });
+  }
+
   /* ── Firebase Firestore (REST) ──
      로그인 없이 누구나 제출할 수 있어야 해서 SDK 대신 REST + 폴링을 씁니다.
      API 키는 공개돼도 되는 값이고, 실제 보호는 firestore.rules 가 합니다. */
@@ -840,6 +916,9 @@
   }
 
   Store.add = function(rec){
+    if (Store.mode === "supabase")
+      return sbAdd(rec).then(function(id){ sbPoll(); return id; });
+
     if (Store.mode === "firebase")
       return fbAdd(rec).then(function(id){ fbPoll(); return id; });
 
@@ -861,6 +940,9 @@
   };
 
   Store.remove = function(id){
+    if (Store.mode === "supabase")
+      return sbDelete(id).then(function(){ sbPoll(); });
+
     if (Store.mode === "firebase")
       return fbDelete(id).then(function(){ fbPoll(); });
 
@@ -874,6 +956,14 @@
   };
 
   function startStore(){
+    if (useSupabase){
+      Store.mode = "supabase";
+      sbLoadConfig();
+      sbPoll();
+      setInterval(sbPoll, 4000);
+      window.addEventListener("focus", sbPoll);
+      return;
+    }
     if (useFirebase){
       Store.mode = "firebase";
       fbLoadConfig();
@@ -917,7 +1007,7 @@
   function fallbackLocal(){
     Store.mode = "local";
     setItems(localRead());
-    var msg = "데모 모드 — 초대가 이 기기에만 저장됩니다. 여러 사람이 각자 폰으로 참여하려면 Firebase 또는 Apps Script 를 연결해주세요. (README.md)";
+    var msg = "데모 모드 — 초대가 이 기기에만 저장됩니다. 여러 사람이 각자 폰으로 참여하려면 Supabase, Firebase, Apps Script 중 하나를 연결해주세요. (README.md)";
     alertBoard(msg); alertForm(msg);
   }
 

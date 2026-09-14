@@ -12,6 +12,7 @@ QR을 스캔한 사람이 **초대하고 싶은 사람의 이름과 기도제목
 
 ```
 index.html              현황판 + 초대장 페이지 (한 파일)
+server/supabase.sql     Supabase 테이블 + 접근 정책
 server/firestore.rules  Firebase 보안 규칙
 server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
 ```
@@ -25,16 +26,44 @@ server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
 
 | 방식 | 누가 제출할 수 있나 | 준비 시간 |
 |---|---|---|
+| **Supabase** | 누구나 (로그인 불필요) | 약 5분 |
 | **Firebase Firestore** | 누구나 (로그인 불필요) | 약 7분 |
 | **Google Apps Script + 스프레드시트** | 누구나 (로그인 불필요) | 약 5분 |
 | **Claude Artifact DB** | Claude 계정으로 로그인한 **같은 조직 구성원만** | 0분 (이미 연결됨) |
 
-> 교인들이 QR만 찍고 들어오는 집회라면 **Firebase 나 Apps Script** 를 쓰셔야 합니다.
+> 교인들이 QR만 찍고 들어오는 집회라면 **Supabase, Firebase, Apps Script** 중 하나를 쓰셔야 합니다.
 > Claude Artifact DB 는 조직 내부 전용이라 외부인은 제출 화면에서 막힙니다.
 
 ---
 
-### 방법 A — Firebase Firestore (권장)
+### 방법 A — Supabase (권장)
+
+1. https://supabase.com 에서 **New project**. 이름은 아무거나, 리전은 `Northeast Asia (Seoul)`.
+   (DB 비밀번호는 이 페이지에서 쓰이지 않으니 적당히 정하고 따로 보관하세요)
+2. 프로젝트가 뜨면 왼쪽 **SQL Editor** → 이 저장소의
+   [`server/supabase.sql`](server/supabase.sql) 내용을 통째로 붙여넣고 **Run**.
+   테이블 두 개와 접근 정책이 한 번에 만들어집니다.
+3. 왼쪽 **Project Settings → API** 에서 두 개를 복사합니다.
+   - **Project URL** (`https://xxxxx.supabase.co`)
+   - **anon public** 키 (`service_role` 키가 아닙니다. 그건 절대 페이지에 넣지 마세요)
+4. `index.html` 에서 이 줄을 채웁니다.
+
+   ```js
+   var SUPABASE = { url: "", anonKey: "" };
+   ```
+
+   > 파일을 고치기 어려우면 주소 뒤에 `?sb=프로젝트URL,anon키` 를 붙여 한 번 접속해도
+   > **그 기기에** 저장됩니다. 다만 교인들 폰마다 할 수는 없으니 배포 전에 파일에
+   > 직접 넣는 쪽이 확실합니다.
+
+`anon` 키는 웹에 공개돼도 되는 값입니다. 실제 보호는 2번에서 건 RLS 정책이 합니다.
+목표 개수나 QR 주소는 **Table Editor → config** 의 `campaign` 행에서 바꾸세요.
+
+접수된 내용은 **Table Editor → invites** 에서 바로 보고, CSV 로 내려받을 수 있습니다.
+
+---
+
+### 방법 B — Firebase Firestore
 
 1. https://console.firebase.google.com 에서 **프로젝트 만들기**. (Google 애널리틱스는 꺼도 됩니다)
 2. 왼쪽 메뉴 **빌드 → Firestore Database → 데이터베이스 만들기**.
@@ -61,7 +90,7 @@ server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
 
 ---
 
-### 방법 B — Google Apps Script + 스프레드시트
+### 방법 C — Google Apps Script + 스프레드시트
 
 접수 내용이 스프레드시트에 그대로 쌓여서, 집회 후 기도제목을 정리하거나 인쇄하기 좋습니다.
 
