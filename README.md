@@ -137,6 +137,7 @@ server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
 
 저장소에 푸시할 때마다 Vercel 이 자동으로 다시 배포합니다.
 `vercel.json` 이 현황판을 캐시하지 않도록 잡아두어서, 집회 중에 고친 내용도 새로고침하면 바로 반영됩니다.
+(JSON 에는 주석을 쓸 수 없습니다. Vercel 이 스키마에 없는 키를 거부하니 파일에 설명을 넣지 마세요)
 
 > Production Branch 는 저장소의 기본 브랜치를 따라갑니다.
 > 다른 브랜치로 배포하려면 Vercel 프로젝트의 **Settings → Git → Production Branch** 에서 바꾸세요.
