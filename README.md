@@ -12,6 +12,7 @@ QR을 스캔한 사람이 **초대하고 싶은 사람의 이름과 기도제목
 
 ```
 index.html              현황판 + 초대장 페이지 (한 파일)
+vercel.json             Vercel 배포 설정 (캐시 끄기)
 server/supabase.sql     Supabase 테이블 + 접근 정책
 server/firestore.rules  Firebase 보안 규칙
 server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
@@ -126,7 +127,21 @@ server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
 
 ## 2. 페이지 올리기
 
-### GitHub Pages (가장 간단)
+### Vercel (권장 — 주소가 예쁘고 갱신이 빠릅니다)
+
+1. https://vercel.com 에 **GitHub 계정으로** 로그인
+2. **Add New… → Project** → `onnurinoah/holystarmemo` 옆 **Import**
+3. 설정 화면에서 손댈 게 없습니다. Framework Preset 이 **Other**, Root Directory 가 `./` 인지만
+   확인하고 **Deploy**. 빌드 과정이 없는 정적 페이지라 30초쯤 걸립니다.
+4. 나온 주소(`https://holystarmemo.vercel.app` 같은 형태)로 열면 끝입니다.
+
+저장소에 푸시할 때마다 Vercel 이 자동으로 다시 배포합니다.
+`vercel.json` 이 현황판을 캐시하지 않도록 잡아두어서, 집회 중에 고친 내용도 새로고침하면 바로 반영됩니다.
+
+> Production Branch 는 저장소의 기본 브랜치를 따라갑니다.
+> 다른 브랜치로 배포하려면 Vercel 프로젝트의 **Settings → Git → Production Branch** 에서 바꾸세요.
+
+### GitHub Pages (대안)
 
 저장소 **Settings → Pages → Source: Deploy from a branch** 에서 브랜치를 고르고
 루트(`/`)로 지정하면 몇 분 뒤 아래 주소로 열립니다.
