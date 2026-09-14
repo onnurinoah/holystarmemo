@@ -172,6 +172,14 @@
   .btn-quiet{background:var(--panel);color:var(--white);border-color:var(--white)}
   .btn-quiet:hover{background:#1C1C38}
   .note{font-size:13px;color:var(--grey);margin:0;line-height:1.6}
+  .linkish{background:none;border:none;color:var(--gold);font-family:var(--kr);font-size:13px;
+           text-decoration:underline;cursor:pointer;padding:0}
+  .diag{
+    font-family:var(--px);font-size:9px;line-height:1.9;color:#CFCFE0;background:#000;
+    border:3px solid #3C3C5E;padding:12px;margin:0;white-space:pre-wrap;word-break:break-all;
+    max-height:240px;overflow:auto
+  }
+  .diag[hidden]{display:none}
   .alert{border:3px solid var(--gold);background:rgba(248,184,0,.1);padding:11px 13px;font-size:14px;
          color:#F0E2BE;margin:0}
   .alert[hidden]{display:none}
@@ -283,6 +291,8 @@
       </label>
       <button class="btn" type="submit" id="f-submit">SEND &gt;</button>
       <p class="note">제출한 이름과 기도제목은 집회 현황 화면에 함께 공개됩니다.</p>
+      <p class="note"><button class="linkish" type="button" id="f-diag">연결 확인</button></p>
+      <pre class="diag" id="diag" hidden></pre>
     </form>
   </div>
 
@@ -883,28 +893,53 @@
   }
 
   /* ── REST (Google Apps Script) ── */
+  /* Apps Script 는 실패해도 HTTP 200 에 HTML(로그인 화면 등)을 돌려줄 때가 많습니다.
+     그래서 먼저 본문을 글자로 읽고, JSON 이 아니면 무엇이 왔는지 알려줍니다. */
+  function readJson(r){
+    return r.text().then(function(txt){
+      var t = (txt || "").trim();
+      if (t.charAt(0) === "{" || t.charAt(0) === "[") {
+        try { return JSON.parse(t); }
+        catch (e){ throw new Error("서버 응답을 해석하지 못했습니다 (HTTP " + r.status + ")"); }
+      }
+      if (/accounts\.google\.com|ServiceLogin|<title>[^<]*(로그인|Sign in)/i.test(t))
+        throw new Error("Apps Script 배포의 액세스 권한이 '모든 사용자'가 아닙니다. " +
+                        "배포 → 배포 관리 → 연필 → 액세스 권한을 '모든 사용자'로 바꾸고 새 버전으로 다시 배포하세요.");
+      if (/<html/i.test(t))
+        throw new Error("서버가 JSON 대신 웹페이지를 돌려줬습니다 (HTTP " + r.status + "). " +
+                        "웹 앱 배포가 맞는지, /exec 주소가 맞는지 확인해주세요.");
+      throw new Error("서버 응답이 비어 있거나 형식이 다릅니다 (HTTP " + r.status + ") " + t.slice(0, 80));
+    });
+  }
+
+  function netErr(e){
+    if (e && e.name === "TypeError")
+      return new Error("서버에 연결하지 못했습니다. 주소가 맞는지, 배포 액세스 권한이 '모든 사용자'인지 확인해주세요.");
+    return e;
+  }
+
   function restCall(payload){
     return fetch(SERVER_URL, {
       method: "POST", redirect: "follow",
       headers: { "Content-Type": "text/plain;charset=utf-8" },   // preflight 회피
       body: JSON.stringify(payload)
-    }).then(function(r){ return r.json(); }).then(function(j){
-      if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "server");
+    }).then(readJson, function(e){ throw netErr(e); }).then(function(j){
+      if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "서버가 요청을 거절했습니다.");
       return j;
     });
   }
   function restPoll(){
     fetch(SERVER_URL + (SERVER_URL.indexOf("?") < 0 ? "?" : "&") + "action=list&t=" + Date.now(),
           { redirect: "follow" })
-      .then(function(r){ return r.json(); })
+      .then(readJson, function(e){ throw netErr(e); })
       .then(function(j){
-        if (!j || j.ok !== true) throw new Error("server");
-        if (j.goal && j.goal !== state.goal){ state.goal = j.goal; }
+        if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "서버가 요청을 거절했습니다.");
+        if (j.goal && j.goal !== state.goal){ state.goal = j.goal; renderAll(); }
         if (j.shareUrl) state.shareUrl = j.shareUrl;
         setItems(j.items || []);
         alertBoard("");
       })
-      .catch(function(){ alertBoard("서버와 연결이 잠시 끊겼습니다. 다시 시도하는 중…", true); });
+      .catch(function(e){ alertBoard(short(e), true); });
   }
 
   var LOCAL_KEY = "wh.invites";
@@ -1145,6 +1180,42 @@
       $("done-prog").textContent = pad2(n) + " / " + pad2(goal) + "  ·  집까지 " + (goal - n) + "걸음";
     }
   }
+
+  $("f-diag").addEventListener("click", function(){
+    var box = $("diag");
+    box.hidden = false;
+    var lines = ["저장소 모드 : " + Store.mode];
+    if (Store.mode === "rest")     lines.push("서버 : " + SERVER_URL);
+    if (Store.mode === "supabase") lines.push("서버 : " + SUPABASE.url);
+    if (Store.mode === "firebase") lines.push("서버 : " + FIREBASE.projectId);
+    lines.push("현재 화면 : " + location.origin + location.pathname);
+    lines.push("받아온 초대 : " + state.items.length + "건");
+    lines.push("", "확인하는 중…");
+    box.textContent = lines.join("\n");
+
+    if (Store.mode !== "rest"){
+      lines[lines.length - 1] = Store.mode === "local"
+        ? "서버가 연결되지 않았습니다. index.html 의 SERVER_URL / SUPABASE 값을 확인하세요."
+        : "이 모드는 여기서 더 확인할 게 없습니다.";
+      box.textContent = lines.join("\n");
+      return;
+    }
+
+    var u = SERVER_URL + (SERVER_URL.indexOf("?") < 0 ? "?" : "&") + "action=list&t=" + Date.now();
+    fetch(u, { redirect: "follow" })
+      .then(function(r){
+        return r.text().then(function(t){ return { status: r.status, body: (t || "").trim() }; });
+      })
+      .then(function(res){
+        lines[lines.length - 1] = "HTTP " + res.status;
+        lines.push("응답 : " + res.body.slice(0, 300));
+        box.textContent = lines.join("\n");
+      })
+      .catch(function(e){
+        lines[lines.length - 1] = "연결 실패 : " + short(netErr(e));
+        box.textContent = lines.join("\n");
+      });
+  });
 
   $("again").addEventListener("click", function(){
     $("letter-done").hidden = true;
