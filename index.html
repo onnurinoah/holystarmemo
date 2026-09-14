@@ -279,16 +279,12 @@
       </div>
       <div class="field">
         <label for="f-prayer">2. 기도제목</label>
-        <textarea id="f-prayer" name="prayer" maxlength="400" placeholder="이 사람을 위해 함께 무엇을 구할까요?" required></textarea>
+        <textarea id="f-prayer" name="prayer" maxlength="400" placeholder="이 분을 위해 함께 무엇을 구할까요?" required></textarea>
       </div>
       <div class="field">
         <label for="f-sender">3. 보내는 사람 (선택)</label>
-        <input type="text" id="f-sender" name="sender" maxlength="30" autocomplete="off" placeholder="예) 청년2부 이서연">
+        <input type="text" id="f-sender" name="sender" maxlength="30" autocomplete="off">
       </div>
-      <label class="check" for="f-mask">
-        <input type="checkbox" id="f-mask">
-        <span>이름을 가려서 올리기 — 체크하면 <b>김○○</b> 형태로만 저장됩니다. 전체 이름은 이 기기를 떠나지 않습니다.</span>
-      </label>
       <button class="btn" type="submit" id="f-submit">SEND &gt;</button>
       <p class="note">제출한 이름과 기도제목은 집회 현황 화면에 함께 공개됩니다.</p>
       <p class="note"><button class="linkish" type="button" id="f-diag">연결 확인</button></p>
@@ -1120,12 +1116,6 @@
   }
   window.addEventListener("hashchange", route);
 
-  function mask(name){
-    var n = name.trim();
-    if (n.length <= 1) return n;
-    return n.charAt(0) + "○".repeat(Math.min(n.length - 1, 4));
-  }
-
   /* ═══════════ 제출 ═══════════ */
   $("invite-form").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -1136,16 +1126,15 @@
     if (!name){ alertForm("초대할 사람의 이름을 적어주세요.", true); $("f-name").focus(); return; }
     if (!prayer){ alertForm("기도제목을 적어주세요.", true); $("f-prayer").focus(); return; }
 
-    var stored = $("f-mask").checked ? mask(name) : name;
     var btn = $("f-submit");
     btn.disabled = true; btn.textContent = "SENDING…";
     alertForm("");
 
-    Store.add({ name: stored, prayer: prayer, sender: sender }).then(function(id){
+    Store.add({ name: name, prayer: prayer, sender: sender }).then(function(id){
       state.lastId = id;
       state.lastN = state.items.length + (Store.mode === "local" ? 0 : 1);
-      $("f-name").value = ""; $("f-prayer").value = ""; $("f-mask").checked = false;
-      showDone(stored);
+      $("f-name").value = ""; $("f-prayer").value = "";
+      showDone(name);
     }).catch(function(e){
       alertForm(errText(e), true);
     }).then(function(){
@@ -1165,13 +1154,13 @@
     }, 140);
   }
 
-  function showDone(stored){
+  function showDone(who){
     var n = Math.max(state.lastN, 1), goal = state.goal;
     $("letter-form").hidden = true;
     $("letter-done").hidden = false;
     $("undo").disabled = false;
     $("undo").textContent = "방금 보낸 것 취소";
-    $("done-name").textContent = "“" + stored + "”";
+    $("done-name").textContent = "“" + who + "”";
     if (n >= goal){
       $("done-head").textContent = "문이 열렸습니다";
       $("done-prog").textContent = "COIN " + goal + "/" + goal + "\n아버지가 아들을 안았습니다.";
