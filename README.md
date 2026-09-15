@@ -120,7 +120,7 @@ server/Code.gs          구글 스프레드시트 접수 서버 (Apps Script)
 
 ### 목표 개수 바꾸기
 
-`config` 시트의 `goal` 값을 바꾸면 됩니다. (기본 40)
+`config` 시트의 `goal` 값을 바꾸면 됩니다. (기본 30)
 서버 없이 쓸 때는 `index.html` 의 `DEFAULT_GOAL` 을 고치세요.
 
 ---

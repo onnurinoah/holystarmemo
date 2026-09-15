@@ -216,10 +216,10 @@
     <div>
       <p class="eyebrow">2026 EVANGELISM</p>
       <h1 class="wordmark">WELCOME<br><span>HOME</span></h1>
-      <p class="tagline">초대장 한 장이 코인 하나를 켭니다. 마흔 개가 켜지면 아들이 아버지 품에 안깁니다.</p>
+      <p class="tagline">초대장 한 장이 코인 하나를 켭니다. 서른 개가 켜지면 아들이 아버지 품에 안깁니다.</p>
     </div>
     <div class="meter">
-      <p class="tally"><b id="tally-n">0</b><span id="tally-of">/ 40</span></p>
+      <p class="tally"><b id="tally-n">0</b><span id="tally-of">/ 30</span></p>
       <div class="track"><i id="track-fill"></i></div>
       <p class="status" id="status">첫 번째 초대를 기다리고 있습니다.</p>
       <p class="recent" id="recent"></p>
@@ -238,8 +238,8 @@
     <canvas id="stage" width="480" height="176" role="img"
             aria-label="왼쪽 끝의 아들이 오른쪽 끝의 집을 향해 걸어갑니다. 집 앞에는 아버지가 팔을 벌리고 서 있고, 길 위의 코인은 접수된 초대장 수만큼 켜집니다."></canvas>
     <div class="hud">
-      <span>INVITES <b id="hud-n">00</b>/<b id="hud-goal">40</b></span>
-      <span class="kr" id="hud-left">집까지 40걸음</span>
+      <span>INVITES <b id="hud-n">00</b>/<b id="hud-goal">30</b></span>
+      <span class="kr" id="hud-left">집까지 30걸음</span>
     </div>
     <div class="banner">WELCOME HOME!</div>
   </div>
@@ -324,7 +324,7 @@
      (README.md 참고. 주소 뒤에 ?fb=프로젝트ID,API키 를 붙여 접속해도 이 기기에 저장됩니다.) */
   var FIREBASE = { projectId: "", apiKey: "" };
 
-  var DEFAULT_GOAL = 40;
+  var DEFAULT_GOAL = 30;
 
   var $ = function(id){ return document.getElementById(id); };
   var qs = new URLSearchParams(location.search);
@@ -481,6 +481,26 @@
   SPR.coinOff= [".ee.","e..e","e..e","e..e","e..e",".ee."];
   SPR.heart  = [".r.r.","rRrRr","rRRRr",".rRr.","..r.."];
 
+  /* 팔이 있는 두 줄(양끝이 손인 줄)을 위/아래로 한 칸 옮긴 프레임을 만듭니다.
+     제자리 대기 동작을 픽셀맵을 다시 그리지 않고 얻기 위한 것입니다. */
+  function armShift(rows, d){
+    var out = rows.slice(), idx = [], i;
+    for (i = 0; i < rows.length; i++) if (rows[i].charAt(0) === "s") idx.push(i);
+    if (idx.length !== 2 || idx[1] !== idx[0] + 1) return out;
+    var a = idx[0], b = idx[1];
+    if (d > 0){
+      if (b + 1 >= rows.length) return out;
+      out[a] = rows[b + 1]; out[a + 1] = rows[a]; out[b + 1] = rows[b];
+    } else {
+      if (a - 1 < 0) return out;
+      out[a - 1] = rows[a]; out[a] = rows[b]; out[b] = rows[a - 1];
+    }
+    return out;
+  }
+
+  SPR.sonIdle    = armShift(SPR.sonStand, 1);   // 아들: 팔을 한 칸 내림
+  SPR.fatherWave = armShift(SPR.father, -1);    // 아버지: 팔을 한 칸 올림
+
   /* 픽셀맵 → 오프스크린 캔버스 */
   function bake(rows){
     var w = rows[0].length, h = rows.length;
@@ -501,9 +521,12 @@
 
   /* ═══════════ 무대 ═══════════ */
   var W = 480, H = 176, GY = 138;          // 가상 해상도 / 지면
-  var SON_X0 = 16, SON_X1 = 358;           // 아들 이동 구간
-  var DAD_X = 376;                         // 아버지 위치
-  var COIN_X0 = 18, COIN_SPAN = 330, COIN_Y = 74;
+  var CH = 1.5;                            // 캐릭터 확대 배율
+  var SON_X0 = 16, SON_X1 = 326;           // 아들 이동 구간
+  var DAD_X = 350;                         // 아버지 위치 (집 앞)
+  var HUG_X = 328;                         // 포옹 스프라이트 위치
+  var COIN_X0 = 20, COIN_SPAN = 286, COIN_Y = 68;
+  var COIN_W = 6, COIN_H = 9;              // 4x6 원본을 1.5배로 그립니다
 
   var stage = $("stage"), ctx = stage.getContext("2d");
   ctx.imageSmoothingEnabled = false;
@@ -533,17 +556,17 @@
       .forEach(function(s2){ px(c,s2[0],s2[1],1,1,"#FCFCFC"); });
 
     /* 지는 해 — 언덕 뒤로 내려앉습니다 */
-    var SUNX = 208, SUNY = 100, SR = 14;
+    var SUNX = 200, SUNY = 102, SR = 16;
     for (var sy = -SR; sy <= SR; sy++){
       var half = Math.round(Math.sqrt(SR*SR - sy*sy));
-      px(c, SUNX-half, SUNY+sy, half*2, 1, sy < -4 ? "#FCE0A8" : "#F8D060");
+      px(c, SUNX-half, SUNY+sy, half*2, 1, sy < -5 ? "#FCE0A8" : "#F8D060");
     }
 
     /* 구름 */
     function cloud(x,y){
-      px(c,x+3,y,8,3,"#FCFCFC"); px(c,x,y+3,14,3,"#FCFCFC"); px(c,x+2,y+6,10,2,"#E8E8F8");
+      px(c,x+4,y,10,4,"#FCFCFC"); px(c,x,y+4,18,4,"#FCFCFC"); px(c,x+3,y+8,12,2,"#E8E8F8");
     }
-    cloud(38,26); cloud(214,16); cloud(330,36); cloud(122,46); cloud(412,22);
+    cloud(34,24); cloud(212,14); cloud(326,34); cloud(118,44); cloud(414,20);
 
     /* 둥근 언덕 */
     function hill(cx,w,h,col,hi){
@@ -554,64 +577,69 @@
         if (i===0) px(c, cx-(wr>>1)+1, GY-h, Math.max(wr-2,1), 1, hi);
       }
     }
-    hill(52,96,16,"#006818","#00883C");
-    hill(196,132,22,"#005410","#006818");
-    hill(330,112,15,"#006818","#00883C");
-    hill(444,74,11,"#005410","#006818");
+    hill(56,108,20,"#006818","#00883C");
+    hill(210,144,26,"#005410","#006818");
+    hill(340,104,15,"#006818","#00883C");
 
     /* 지면 */
-    px(c,0,GY,W,4,"#00A844");
-    for (var gx=0; gx<W; gx+=4) px(c,gx,GY,2,1,"#58D854");
-    px(c,0,GY+4,W,H-GY-4,"#C87C28");
-    for (var by=GY+4; by<H; by+=8){
+    px(c,0,GY,W,5,"#00A844");
+    for (var gx=0; gx<W; gx+=5) px(c,gx,GY,2,1,"#58D854");
+    px(c,0,GY+5,W,H-GY-5,"#C87C28");
+    for (var by=GY+5; by<H; by+=9){
       px(c,0,by,W,1,"#7C4000");
-      for (var bx=((by/8|0)%2?0:8); bx<W; bx+=16) px(c,bx,by,1,8,"#7C4000");
+      for (var bx=(((by-GY)/9|0)%2?0:9); bx<W; bx+=18) px(c,bx,by,1,9,"#7C4000");
     }
 
     /* 덤불 */
     function bush(x){
-      px(c,x+2,GY-4,6,4,"#00A844"); px(c,x,GY-2,10,2,"#00A844"); px(c,x+3,GY-5,3,1,"#58D854");
+      px(c,x+3,GY-7,9,7,"#00A844"); px(c,x,GY-4,15,4,"#00A844"); px(c,x+4,GY-8,4,1,"#58D854");
     }
-    bush(78); bush(158); bush(252); bush(330);
+    bush(74); bush(160); bush(258);
 
-    /* 집 — 굴뚝, 지붕(아래로 넓어짐), 벽 */
-    px(c,448,50,9,22,"#8C4018");
-    px(c,446,48,13,4,"#A85028");
-    for (var ry=0; ry<24; ry++){
-      var w2 = Math.min(26 + ry*3, 92);
-      px(c, 432-(w2>>1), 60+ry, w2, 1, ry<2 ? "#F85838" : "#D82800");
-      px(c, 432-(w2>>1), 60+ry, 1, 1, "#A01800");
-      px(c, 432+(w2>>1)-1, 60+ry, 1, 1, "#A01800");
+    /* ── 집 ── 굴뚝을 먼저 그리고 지붕으로 덮어 이음새를 감춥니다 */
+    px(c,446,38,12,26,"#8C4018");
+    px(c,444,35,16,4,"#A85028");
+    for (var ry=0; ry<31; ry++){
+      var w2 = Math.min(28 + ry*2.5, 100);
+      px(c, 430-(w2>>1), 46+ry, w2, 1, ry<2 ? "#F85838" : "#D82800");
+      px(c, 430-(w2>>1), 46+ry, 1, 1, "#A01800");
+      px(c, 430+(w2>>1)-1, 46+ry, 1, 1, "#A01800");
     }
-    px(c,384,82,96,3,"#8C4018");                  // 처마
-    px(c,392,85,80,GY-85,"#E8A058");              // 벽
-    for (var wy=87; wy<GY; wy+=9) px(c,392,wy,80,1,"#C87C28");
-    px(c,392,85,2,GY-85,"#8C4018"); px(c,470,85,2,GY-85,"#8C4018");
+    px(c,380,76,100,4,"#8C4018");                 // 처마
+    px(c,386,80,88,GY-80,"#E8A058");              // 벽
+    for (var wy=83; wy<GY; wy+=11) px(c,386,wy,88,1,"#C87C28");
+    px(c,386,80,3,GY-80,"#8C4018"); px(c,471,80,3,GY-80,"#8C4018");
   }
 
   function drawHouseLights(c, lit){
-    [400,448].forEach(function(x){                // 창문
-      px(c,x,94,16,14, lit ? "#FCE0A8" : "#3C5CD8");
-      px(c,x,94,16,1,"#8C4018"); px(c,x,107,16,1,"#8C4018");
-      px(c,x+7,94,2,14,"#8C4018");
+    [396,448].forEach(function(x){                // 창문 18x18
+      px(c,x,92,18,18, lit ? "#FCE0A8" : "#3C5CD8");
+      px(c,x,92,18,2,"#8C4018"); px(c,x,108,18,2,"#8C4018");
+      px(c,x+8,92,2,18,"#8C4018");
     });
     if (lit){                                     // 열린 문 + 쏟아지는 빛
-      px(c,424,110,18,GY-110,"#FCE0A8");
-      px(c,422,108,22,2,"#8C4018");
-      for (var i=0;i<14;i++) px(c, 420-i, GY+i, 30+i*2, 1, i%2 ? "#F8D878" : "#FCE0A8");
+      px(c,420,100,24,GY-100,"#FCE0A8");
+      px(c,417,97,30,3,"#8C4018");
+      for (var i=0;i<16;i++) px(c, 416-i, GY+i, 32+i*2, 1, i%2 ? "#F8D878" : "#FCE0A8");
     } else {
-      px(c,424,110,18,GY-110,"#5C3010");
-      px(c,422,108,22,2,"#8C4018");
-      px(c,438,124,2,2,"#F8B800");
+      px(c,420,100,24,GY-100,"#5C3010");
+      px(c,417,97,30,3,"#8C4018");
+      px(c,438,120,3,3,"#F8B800");
     }
   }
 
   function drawCoin(c, i, on, frame){
     var x = COIN_X0 + Math.round(i * COIN_SPAN / Math.max(state.goal - 1, 1));
     var img = on ? IMG.coinOn : IMG.coinOff;
-    if (!on){ c.drawImage(img, x, COIN_Y); return; }
-    var widths = [4,3,2,3], w = widths[frame & 3];
-    c.drawImage(img, 0, 0, 4, 6, x + ((4-w)>>1), COIN_Y, w, 6);
+    if (!on){ c.drawImage(img, 0, 0, 4, 6, x, COIN_Y, COIN_W, COIN_H); return; }
+    var widths = [COIN_W, 4, 2, 4], w = widths[frame & 3];
+    c.drawImage(img, 0, 0, 4, 6, x + Math.round((COIN_W - w) / 2), COIN_Y, w, COIN_H);
+  }
+
+  /* 스프라이트는 발끝을 지면에 맞춰 CH 배로 확대해 그립니다. */
+  function drawChar(img, x, bob){
+    var w = Math.round(img.width * CH), h = Math.round(img.height * CH);
+    ctx.drawImage(img, Math.round(x), Math.round(GY - h - (bob || 0)), w, h);
   }
 
   /* 애니메이션 상태 */
@@ -641,23 +669,40 @@
     var cf = Math.floor(anim.tick / 140);
     for (var i = 0; i < state.goal; i++) drawCoin(ctx, i, i < lit, cf + i);
 
+    /* 제자리 대기 동작 — 프레임 교체와 1px 흔들림의 주기를 달리 둬
+       둘이 딱딱 맞아떨어지지 않고 숨 쉬는 것처럼 보이게 합니다. */
+    var sonFrame = Math.floor(anim.tick / 540) % 2;
+    var sonBob   = Math.floor(anim.tick / 380) % 2;
+    var dadFrame = Math.floor((anim.tick + 260) / 620) % 2;
+    var dadBob   = Math.floor((anim.tick + 190) / 440) % 2;
+
     if (done){
       /* 포옹 */
-      ctx.drawImage(IMG.hug, Math.round(SON_X1 - 2), GY - 22);
+      drawChar(IMG.hug, HUG_X, Math.floor(anim.tick / 500) % 2);
+      var hw = Math.round(IMG.hug.width * CH);
       if (anim.hearts.length < 14 && Math.random() < 0.09){
-        anim.hearts.push({ x: SON_X1 + 4 + Math.random()*16, y: GY - 24, v: 0.014 + Math.random()*0.016, life: 0 });
+        anim.hearts.push({
+          x: HUG_X + 6 + Math.random() * (hw - 14),
+          y: GY - Math.round(IMG.hug.height * CH) - 4,
+          v: 0.014 + Math.random() * 0.016, life: 0
+        });
       }
+      var heartW = Math.round(IMG.heart.width * CH), heartH = Math.round(IMG.heart.height * CH);
       anim.hearts = anim.hearts.filter(function(hp){
         hp.life += dt; hp.y -= hp.v * dt;
         if (hp.life > 2400) return false;
         if (Math.floor(hp.life/120) % 2 === 0 || hp.life < 1800)
-          ctx.drawImage(IMG.heart, Math.round(hp.x + Math.sin(hp.life/260)*3), Math.round(hp.y));
+          ctx.drawImage(IMG.heart, Math.round(hp.x + Math.sin(hp.life/260)*3), Math.round(hp.y),
+                        heartW, heartH);
         return true;
       });
     } else {
-      ctx.drawImage(IMG.father, DAD_X, GY - 22);
-      var sp = moving ? (Math.floor(anim.tick/130) % 2 ? IMG.sonWalkA : IMG.sonWalkB) : IMG.sonStand;
-      ctx.drawImage(sp, Math.round(anim.sonX), GY - 20);
+      drawChar(dadFrame ? IMG.fatherWave : IMG.father, DAD_X, dadBob);
+      if (moving){
+        drawChar(Math.floor(anim.tick/130) % 2 ? IMG.sonWalkA : IMG.sonWalkB, anim.sonX, 0);
+      } else {
+        drawChar(sonFrame ? IMG.sonIdle : IMG.sonStand, anim.sonX, sonBob);
+      }
     }
 
     requestAnimationFrame(frameLoop);
@@ -683,7 +728,7 @@
     $("hud-left").textContent = left > 0 ? "집까지 " + left + "걸음" : "아버지 품";
 
     var on = $("overflow-note");
-    if (lit > goal){ on.hidden = false; on.textContent = "마흔 개를 넘어 " + lit + "개의 초대가 모였습니다."; }
+    if (lit > goal){ on.hidden = false; on.textContent = "서른 개를 넘어 " + lit + "개의 초대가 모였습니다."; }
     else on.hidden = true;
   }
 

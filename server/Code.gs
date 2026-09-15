@@ -33,7 +33,7 @@ function configSheet_() {
   if (!sh) {
     sh = ss.insertSheet(CONFIG_NAME);
     sh.appendRow(['key', 'value']);
-    sh.appendRow(['goal', 40]);
+    sh.appendRow(['goal', 30]);
     sh.appendRow(['shareUrl', '']);
     sh.setFrozenRows(1);
   }
@@ -42,7 +42,7 @@ function configSheet_() {
 
 function readConfig_() {
   var rows = configSheet_().getDataRange().getValues();
-  var out = { goal: 40, shareUrl: '' };
+  var out = { goal: 30, shareUrl: '' };
   for (var i = 1; i < rows.length; i++) {
     var k = String(rows[i][0]).trim();
     if (k === 'goal') {

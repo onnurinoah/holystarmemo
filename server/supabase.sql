@@ -33,7 +33,7 @@ create policy "누구나 취소" on public.invites
 -- 목표 개수와 QR 주소. 대시보드에서만 고칩니다.
 create table if not exists public.config (
   key       text primary key,
-  goal      int  not null default 40,
+  goal      int  not null default 30,
   share_url text not null default ''
 );
 
@@ -43,5 +43,5 @@ create policy "설정 읽기" on public.config
   for select to anon using (true);
 
 insert into public.config (key, goal, share_url)
-values ('campaign', 40, '')
+values ('campaign', 30, '')
 on conflict (key) do nothing;
