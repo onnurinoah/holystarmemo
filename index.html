@@ -137,6 +137,7 @@
   .invite{background:var(--panel);border:3px solid #30304E;padding:15px 16px 17px;display:flex;flex-direction:column;gap:8px}
   .invite .no{font-family:var(--px);font-size:8px;color:var(--gold)}
   .invite .who{font-size:21px;margin:0;line-height:1.3;overflow-wrap:anywhere}
+  .invite .rel{margin:0;font-size:13px;color:var(--gold);overflow-wrap:anywhere}
   .invite .pray{margin:0;font-size:14.5px;line-height:1.65;color:#CFCFE0;overflow-wrap:anywhere}
   .invite .meta{margin:2px 0 0;font-size:12px;color:var(--grey)}
   .empty{grid-column:1/-1;background:var(--panel);border:3px solid #30304E;padding:40px 22px;text-align:center;color:var(--grey)}
@@ -160,7 +161,11 @@
   input[type=text]:focus,textarea:focus{border-color:var(--gold);outline:none}
   textarea{min-height:110px;line-height:1.65}
   #rows{display:flex;flex-direction:column;gap:9px}
-  .row-inv{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:start}
+  .row-inv{
+    display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:start;
+    padding:10px;border:3px solid #23233C;background:rgba(0,0,0,.35)
+  }
+  .row-inv .in-pray{grid-column:1/-1}
   .row-del{
     background:none;border:3px solid #3C3C5E;color:var(--grey);font-family:var(--px);
     font-size:11px;line-height:1;width:44px;height:46px;cursor:pointer;flex:0 0 auto
@@ -171,6 +176,7 @@
   @media (max-width:470px){
     .row-inv{grid-template-columns:1fr auto}
     .row-inv .in-rel{grid-column:1}
+    .row-inv .in-pray{grid-column:1/-1}
   }
   .check{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#CFCFE0;cursor:pointer}
   .check input{margin:4px 0 0;accent-color:var(--gold);width:16px;height:16px;flex:0 0 auto}
@@ -281,7 +287,7 @@
 
   <div class="letter" id="letter-form">
     <h1>초대하고 싶은 사람이 있나요?</h1>
-    <p class="lede">이름과 관계를 남겨주세요. 한 사람당 코인 하나가 켜지고, 아들이 아버지 쪽으로 그만큼 걸어갑니다.</p>
+    <p class="lede">이름과 관계를 남겨주세요. 기도제목은 원하시면 함께 적어주세요. 한 사람당 코인 하나가 켜지고, 아들이 아버지 쪽으로 그만큼 걸어갑니다.</p>
 
     <p class="alert" id="form-alert" hidden></p>
 
@@ -292,11 +298,11 @@
         <button class="btn btn-quiet btn-add" type="button" id="f-add">+ 한 명 더</button>
       </div>
       <div class="field">
-        <label for="f-sender">2. 보내는 사람 (선택)</label>
-        <input type="text" id="f-sender" name="sender" maxlength="30" autocomplete="off">
+        <label for="f-sender">2. 보내는 사람</label>
+        <input type="text" id="f-sender" name="sender" maxlength="30" autocomplete="off" required>
       </div>
       <button class="btn" type="submit" id="f-submit">SEND &gt;</button>
-      <p class="note">제출한 이름과 관계는 집회 현황 화면에 함께 공개됩니다.</p>
+      <p class="note">제출한 이름·관계·기도제목은 집회 현황 화면에 함께 공개됩니다.</p>
       <p class="note"><button class="linkish" type="button" id="f-diag">연결 확인</button></p>
       <pre class="diag" id="diag" hidden></pre>
     </form>
@@ -770,8 +776,12 @@
       var who = document.createElement("h3"); who.className = "who"; who.textContent = it.name || "이름 없음";
       card.appendChild(no); card.appendChild(who);
       if (it.relation){
-        var rel = document.createElement("p"); rel.className = "pray"; rel.textContent = it.relation;
+        var rel = document.createElement("p"); rel.className = "rel"; rel.textContent = it.relation;
         card.appendChild(rel);
+      }
+      if (it.prayer){
+        var pr = document.createElement("p"); pr.className = "pray"; pr.textContent = it.prayer;
+        card.appendChild(pr);
       }
       var bits = [];
       if (it.sender) bits.push(it.sender);
@@ -843,13 +853,13 @@
   }
 
   function sbPoll(){
-    fetch(sbRest("invites?select=id,name,relation,sender,ts&order=ts.asc&limit=300"), { headers: sbHead() })
+    fetch(sbRest("invites?select=id,name,relation,prayer,sender,ts&order=ts.asc&limit=300"), { headers: sbHead() })
       .then(function(r){ return r.json(); })
       .then(sbRows)
       .then(function(rows){
         setItems(rows.map(function(r){
           return { id: String(r.id), name: r.name || "", relation: r.relation || "",
-                   sender: r.sender || "", ts: Number(r.ts) || 0 };
+                   prayer: r.prayer || "", sender: r.sender || "", ts: Number(r.ts) || 0 };
         }));
         alertBoard("");
       })
@@ -876,7 +886,7 @@
     function str(k){ return (f[k] && f[k].stringValue) || ""; }
     return {
       id: String(doc.name || "").split("/").pop(),
-      name: str("name"), relation: str("relation"), sender: str("sender"),
+      name: str("name"), relation: str("relation"), prayer: str("prayer"), sender: str("sender"),
       ts: f.ts ? Number(f.ts.integerValue || f.ts.doubleValue || 0) : 0
     };
   }
@@ -971,7 +981,7 @@
         method: "POST",
         headers: sbHead({ "Content-Type": "application/json", Prefer: "return=representation" }),
         body: JSON.stringify(people.map(function(p, i){
-          return { name: p.name, relation: p.relation || "", sender: sender || "", ts: now + i };
+          return { name: p.name, relation: p.relation || "", prayer: p.prayer || "", sender: sender || "", ts: now + i };
         }))
       }).then(function(r){ return r.json(); }).then(sbRows)
         .then(function(rows){
@@ -993,6 +1003,7 @@
           body: JSON.stringify({ fields: {
             name:     { stringValue: p.name },
             relation: { stringValue: p.relation || "" },
+            prayer:   { stringValue: p.prayer || "" },
             sender:   { stringValue: sender || "" },
             ts:       { integerValue: String(now + i) }
           }})
@@ -1004,7 +1015,7 @@
     if (Store.mode === "db"){
       return Promise.all(people.map(function(p, i){
         return Store.db.collection("invites").add({
-          name: p.name, relation: p.relation || "", sender: sender || "",
+          name: p.name, relation: p.relation || "", prayer: p.prayer || "", sender: sender || "",
           createdAt: new Date(now + i).toISOString(), ts: now + i
         }).then(function(ref){ return ref.id; });
       }));
@@ -1014,7 +1025,8 @@
     people.forEach(function(p, i){
       var id = "l" + now + "-" + i + "-" + Math.floor(Math.random() * 1000);
       ids.push(id);
-      list.push({ id: id, name: p.name, relation: p.relation || "", sender: sender || "", ts: now + i });
+      list.push({ id: id, name: p.name, relation: p.relation || "", prayer: p.prayer || "",
+                  sender: sender || "", ts: now + i });
     });
     localWrite(list); setItems(list);
     return Promise.resolve(ids);
@@ -1086,7 +1098,7 @@
         db.collection("invites").orderBy("createdAt","asc").limit(500).onSnapshot(function(snap){
           setItems(snap.docs.map(function(d){
             var v = d.data() || {};
-            return { id:d.id, name:v.name, relation:v.relation, sender:v.sender, ts:v.ts };
+            return { id:d.id, name:v.name, relation:v.relation, prayer:v.prayer, sender:v.sender, ts:v.ts };
           }));
           alertBoard("");
         }, function(e){ alertBoard(errText(e), true); });
@@ -1191,6 +1203,10 @@
     rel.type = "text"; rel.className = "in-rel"; rel.maxLength = 30;
     rel.autocomplete = "off"; rel.placeholder = "관계 (예: 친구)";
 
+    var pray = document.createElement("input");
+    pray.type = "text"; pray.className = "in-pray"; pray.maxLength = 200;
+    pray.autocomplete = "off"; pray.placeholder = "기도제목 (선택)";
+
     var del = document.createElement("button");
     del.type = "button"; del.className = "row-del"; del.textContent = "X";
     del.setAttribute("aria-label", "이 줄 지우기");
@@ -1200,7 +1216,7 @@
       syncRows();
     });
 
-    wrap.appendChild(nm); wrap.appendChild(rel); wrap.appendChild(del);
+    wrap.appendChild(nm); wrap.appendChild(rel); wrap.appendChild(del); wrap.appendChild(pray);
     $("rows").appendChild(wrap);
     syncRows();
     if (focus) nm.focus();
@@ -1218,7 +1234,8 @@
     for (var i = 0; i < rows.length; i++){
       var nm = rows[i].querySelector(".in-name").value.trim();
       var rel = rows[i].querySelector(".in-rel").value.trim();
-      if (nm) out.push({ name: nm, relation: rel });
+      var pr  = rows[i].querySelector(".in-pray").value.trim();
+      if (nm) out.push({ name: nm, relation: rel, prayer: pr });
     }
     return out;
   }
@@ -1242,6 +1259,11 @@
       alertForm("초대할 사람의 이름을 적어주세요.", true);
       var first = $("rows").querySelector(".in-name");
       if (first) first.focus();
+      return;
+    }
+    if (!sender){
+      alertForm("보내는 사람을 적어주세요.", true);
+      $("f-sender").focus();
       return;
     }
 

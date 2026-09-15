@@ -13,6 +13,7 @@ var CONFIG_NAME = 'config';
 var MAX_ROWS    = 2000;   // 안전장치
 var MAX_NAME    = 40;
 var MAX_REL     = 30;
+var MAX_PRAYER  = 200;
 var MAX_SENDER  = 30;
 
 /* ── 시트 준비 ───────────────────────────── */
@@ -21,7 +22,7 @@ function sheet_() {
   var sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(['id', 'ts', 'name', 'relation', 'sender', 'deleted']);
+    sh.appendRow(['id', 'ts', 'name', 'relation', 'prayer', 'sender', 'deleted']);
     sh.setFrozenRows(1);
   }
   return sh;
@@ -80,14 +81,15 @@ function listAll_() {
   var rows = sheet_().getDataRange().getValues();
   var items = [];
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][5] === true || rows[i][5] === 'TRUE') continue;
+    if (rows[i][6] === true || rows[i][6] === 'TRUE') continue;
     if (!rows[i][0]) continue;
     items.push({
       id:       String(rows[i][0]),
       ts:       Number(rows[i][1]) || 0,
       name:     String(rows[i][2] || ''),
       relation: String(rows[i][3] || ''),
-      sender:   String(rows[i][4] || '')
+      prayer:   String(rows[i][4] || ''),
+      sender:   String(rows[i][5] || '')
     });
   }
   items.sort(function (a, b) { return a.ts - b.ts; });
@@ -117,7 +119,7 @@ function doPost(e) {
     /* 한 번에 여러 명을 받습니다. 두 명이면 두 줄, 세 명이면 세 줄이 쌓입니다. */
     if (action === 'add' || action === 'addMany') {
       var items = body.items;
-      if (!items || !items.length) items = [{ name: body.name, relation: body.relation }];
+      if (!items || !items.length) items = [{ name: body.name, relation: body.relation, prayer: body.prayer }];
 
       var sender = String(body.sender || '').trim().slice(0, MAX_SENDER);
       var now = Date.now();
@@ -126,10 +128,11 @@ function doPost(e) {
       for (var k = 0; k < items.length; k++) {
         var nm  = String((items[k] && items[k].name)     || '').trim().slice(0, MAX_NAME);
         var rel = String((items[k] && items[k].relation) || '').trim().slice(0, MAX_REL);
+        var pry = String((items[k] && items[k].prayer)   || '').trim().slice(0, MAX_PRAYER);
         if (!nm) continue;
         var id = 'i' + now + '-' + k + '-' + Math.floor(Math.random() * 10000);
         ids.push(id);
-        rows.push([id, now + k, nm, rel, sender, false]);
+        rows.push([id, now + k, nm, rel, pry, sender, false]);
       }
 
       if (!rows.length) return json_({ ok: false, error: '이름이 비어 있습니다.' });
@@ -139,7 +142,7 @@ function doPost(e) {
         return json_({ ok: false, error: '접수가 가득 찼습니다.' });
 
       // 한 번의 setValues 로 여러 줄을 통째로 붙입니다.
-      sh.getRange(sh.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
+      sh.getRange(sh.getLastRow() + 1, 1, rows.length, 7).setValues(rows);
       return json_({ ok: true, ids: ids });
     }
 
@@ -152,7 +155,7 @@ function doPost(e) {
       var hit = 0;
       for (var r = 1; r < all.length; r++) {
         if (targets.indexOf(String(all[r][0])) >= 0) {
-          sh2.getRange(r + 1, 6).setValue(true);   // 지우지 않고 표시만 (기록 보존)
+          sh2.getRange(r + 1, 7).setValue(true);   // 지우지 않고 표시만 (기록 보존)
           hit++;
         }
       }
