@@ -159,6 +159,19 @@
   input[type=text]::placeholder,textarea::placeholder{color:#5A5A72}
   input[type=text]:focus,textarea:focus{border-color:var(--gold);outline:none}
   textarea{min-height:110px;line-height:1.65}
+  #rows{display:flex;flex-direction:column;gap:9px}
+  .row-inv{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:start}
+  .row-del{
+    background:none;border:3px solid #3C3C5E;color:var(--grey);font-family:var(--px);
+    font-size:11px;line-height:1;width:44px;height:46px;cursor:pointer;flex:0 0 auto
+  }
+  .row-del:hover{border-color:var(--red);color:var(--red)}
+  .row-del[disabled]{opacity:.3;cursor:not-allowed}
+  .btn-add{font-size:10px;padding:11px 14px;align-self:flex-start;box-shadow:4px 4px 0 #000}
+  @media (max-width:470px){
+    .row-inv{grid-template-columns:1fr auto}
+    .row-inv .in-rel{grid-column:1}
+  }
   .check{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#CFCFE0;cursor:pointer}
   .check input{margin:4px 0 0;accent-color:var(--gold);width:16px;height:16px;flex:0 0 auto}
   .btn{
@@ -250,8 +263,8 @@
 
  <div class="below">
   <div class="wall-head">
-    <h2>PRAYER LIST</h2>
-    <p id="wall-sub">이름과 기도제목은 코인 순서대로 놓입니다.</p>
+    <h2>INVITE LIST</h2>
+    <p id="wall-sub">이름은 코인 순서대로 놓입니다.</p>
   </div>
   <div class="wall" id="wall"></div>
 
@@ -268,25 +281,22 @@
 
   <div class="letter" id="letter-form">
     <h1>초대하고 싶은 사람이 있나요?</h1>
-    <p class="lede">이름과 기도제목을 남겨주세요. 초대장 한 장이 길 위의 코인 하나를 켜고, 아들을 아버지 쪽으로 한 걸음 옮깁니다.</p>
+    <p class="lede">이름과 관계를 남겨주세요. 한 사람당 코인 하나가 켜지고, 아들이 아버지 쪽으로 그만큼 걸어갑니다.</p>
 
     <p class="alert" id="form-alert" hidden></p>
 
     <form id="invite-form" novalidate>
       <div class="field">
-        <label for="f-name">1. 초대할 사람</label>
-        <input type="text" id="f-name" name="name" maxlength="40" autocomplete="off" placeholder="예) 김민수" required>
+        <label>1. 초대할 사람</label>
+        <div id="rows"></div>
+        <button class="btn btn-quiet btn-add" type="button" id="f-add">+ 한 명 더</button>
       </div>
       <div class="field">
-        <label for="f-prayer">2. 기도제목</label>
-        <textarea id="f-prayer" name="prayer" maxlength="400" placeholder="이 분을 위해 함께 무엇을 구할까요?" required></textarea>
-      </div>
-      <div class="field">
-        <label for="f-sender">3. 보내는 사람 (선택)</label>
+        <label for="f-sender">2. 보내는 사람 (선택)</label>
         <input type="text" id="f-sender" name="sender" maxlength="30" autocomplete="off">
       </div>
       <button class="btn" type="submit" id="f-submit">SEND &gt;</button>
-      <p class="note">제출한 이름과 기도제목은 집회 현황 화면에 함께 공개됩니다.</p>
+      <p class="note">제출한 이름과 관계는 집회 현황 화면에 함께 공개됩니다.</p>
       <p class="note"><button class="linkish" type="button" id="f-diag">연결 확인</button></p>
       <pre class="diag" id="diag" hidden></pre>
     </form>
@@ -324,6 +334,7 @@
      (README.md 참고. 주소 뒤에 ?fb=프로젝트ID,API키 를 붙여 접속해도 이 기기에 저장됩니다.) */
   var FIREBASE = { projectId: "", apiKey: "" };
 
+  /* 목표 개수는 여기 한 줄이 기준입니다. 서버 설정이 덮어쓰지 않습니다. */
   var DEFAULT_GOAL = 30;
 
   var $ = function(id){ return document.getElementById(id); };
@@ -348,7 +359,7 @@
   var useSupabase = !!(SUPABASE.url && SUPABASE.anonKey);
   var useFirebase = !!(FIREBASE.projectId && FIREBASE.apiKey);
 
-  var state = { goal: DEFAULT_GOAL, items: [], ready:false, lastId:null, lastN:0, shareUrl:"" };
+  var state = { goal: DEFAULT_GOAL, items: [], ready:false, lastIds:[], lastN:0, shareUrl:"" };
 
   /* ═══════════ 픽셀 팔레트 ═══════════ */
   var PAL = {
@@ -749,7 +760,7 @@
       e.className = "empty";
       e.textContent = state.ready ? "아직 켜진 코인이 없습니다. 첫 번째 초대장을 기다립니다." : "불러오는 중…";
       wall.appendChild(e);
-      $("wall-sub").textContent = "이름과 기도제목은 코인 순서대로 놓입니다.";
+      $("wall-sub").textContent = "이름은 코인 순서대로 놓입니다.";
       return;
     }
     state.items.forEach(function(it, i){
@@ -757,8 +768,11 @@
       card.className = "invite";
       var no = document.createElement("p"); no.className = "no"; no.textContent = "COIN " + pad2(i+1);
       var who = document.createElement("h3"); who.className = "who"; who.textContent = it.name || "이름 없음";
-      var pr = document.createElement("p"); pr.className = "pray"; pr.textContent = it.prayer || "";
-      card.appendChild(no); card.appendChild(who); card.appendChild(pr);
+      card.appendChild(no); card.appendChild(who);
+      if (it.relation){
+        var rel = document.createElement("p"); rel.className = "pray"; rel.textContent = it.relation;
+        card.appendChild(rel);
+      }
       var bits = [];
       if (it.sender) bits.push(it.sender);
       var t = ago(it.ts); if (t) bits.push(t);
@@ -821,8 +835,6 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!Array.isArray(j) || !j.length) return;      // 설정 행은 없어도 됩니다
-        var g = Number(j[0].goal);
-        if (g >= 1 && g <= 200 && g !== state.goal){ state.goal = g; renderAll(); }
         if (j[0].share_url && j[0].share_url !== state.shareUrl){
           state.shareUrl = j[0].share_url; drawQR();
         }
@@ -831,38 +843,18 @@
   }
 
   function sbPoll(){
-    fetch(sbRest("invites?select=id,name,prayer,sender,ts&order=ts.asc&limit=300"), { headers: sbHead() })
+    fetch(sbRest("invites?select=id,name,relation,sender,ts&order=ts.asc&limit=300"), { headers: sbHead() })
       .then(function(r){ return r.json(); })
       .then(sbRows)
       .then(function(rows){
         setItems(rows.map(function(r){
-          return { id: String(r.id), name: r.name || "", prayer: r.prayer || "",
+          return { id: String(r.id), name: r.name || "", relation: r.relation || "",
                    sender: r.sender || "", ts: Number(r.ts) || 0 };
         }));
         alertBoard("");
       })
       .catch(function(e){
         alertBoard("Supabase 와 연결하지 못했습니다 — " + short(e) + " 다시 시도하는 중…", true);
-      });
-  }
-
-  function sbAdd(rec){
-    return fetch(sbRest("invites"), {
-      method: "POST",
-      headers: sbHead({ "Content-Type": "application/json", Prefer: "return=representation" }),
-      body: JSON.stringify([{ name: rec.name, prayer: rec.prayer, sender: rec.sender || "", ts: Date.now() }])
-    }).then(function(r){ return r.json(); }).then(sbRows)
-      .then(function(rows){
-        if (!rows.length) throw new Error("접수 결과가 비어 있습니다.");
-        return String(rows[0].id);
-      });
-  }
-
-  function sbDelete(id){
-    return fetch(sbRest("invites?id=eq." + encodeURIComponent(id)), { method: "DELETE", headers: sbHead() })
-      .then(function(r){
-        if (r.ok) return;
-        return r.json().then(function(j){ throw new Error((j && j.message) || "삭제 실패"); });
       });
   }
 
@@ -884,7 +876,7 @@
     function str(k){ return (f[k] && f[k].stringValue) || ""; }
     return {
       id: String(doc.name || "").split("/").pop(),
-      name: str("name"), prayer: str("prayer"), sender: str("sender"),
+      name: str("name"), relation: str("relation"), sender: str("sender"),
       ts: f.ts ? Number(f.ts.integerValue || f.ts.doubleValue || 0) : 0
     };
   }
@@ -894,8 +886,6 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.fields) return;              // 설정 문서는 없어도 됩니다
-        var g = j.fields.goal ? Number(j.fields.goal.integerValue) : 0;
-        if (g >= 1 && g <= 200 && g !== state.goal){ state.goal = g; renderAll(); }
         var su = j.fields.shareUrl && j.fields.shareUrl.stringValue;
         if (su && su !== state.shareUrl){ state.shareUrl = su; drawQR(); }
       })
@@ -913,24 +903,6 @@
       .catch(function(e){
         alertBoard("Firestore 와 연결하지 못했습니다 — " + short(e) + " 다시 시도하는 중…", true);
       });
-  }
-
-  function fbAdd(rec){
-    return fetch(fbDocs() + "/invites?" + fbKey(), {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fields: {
-        name:   { stringValue: rec.name },
-        prayer: { stringValue: rec.prayer },
-        sender: { stringValue: rec.sender || "" },
-        ts:     { integerValue: String(Date.now()) }
-      }})
-    }).then(function(r){ return r.json(); }).then(fbCheck)
-      .then(function(j){ return String(j.name || "").split("/").pop(); });
-  }
-
-  function fbDelete(id){
-    return fetch(fbDocs() + "/invites/" + encodeURIComponent(id) + "?" + fbKey(), { method: "DELETE" })
-      .then(function(r){ return r.json(); }).then(fbCheck);
   }
 
   /* ── REST (Google Apps Script) ── */
@@ -975,8 +947,7 @@
       .then(readJson, function(e){ throw netErr(e); })
       .then(function(j){
         if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "서버가 요청을 거절했습니다.");
-        if (j.goal && j.goal !== state.goal){ state.goal = j.goal; renderAll(); }
-        if (j.shareUrl) state.shareUrl = j.shareUrl;
+        if (j.shareUrl) state.shareUrl = j.shareUrl;   // 목표 개수는 DEFAULT_GOAL 이 기준입니다
         setItems(j.items || []);
         alertBoard("");
       })
@@ -991,43 +962,91 @@
     try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); } catch(e){}
   }
 
-  Store.add = function(rec){
-    if (Store.mode === "supabase")
-      return sbAdd(rec).then(function(id){ sbPoll(); return id; });
+  /* 여러 명을 한 번에 접수합니다. 두 명이면 두 줄, 세 명이면 세 줄이 쌓입니다. */
+  Store.addMany = function(people, sender){
+    var now = Date.now();
 
-    if (Store.mode === "firebase")
-      return fbAdd(rec).then(function(id){ fbPoll(); return id; });
+    if (Store.mode === "supabase"){
+      return fetch(sbRest("invites"), {
+        method: "POST",
+        headers: sbHead({ "Content-Type": "application/json", Prefer: "return=representation" }),
+        body: JSON.stringify(people.map(function(p, i){
+          return { name: p.name, relation: p.relation || "", sender: sender || "", ts: now + i };
+        }))
+      }).then(function(r){ return r.json(); }).then(sbRows)
+        .then(function(rows){
+          if (!rows.length) throw new Error("접수 결과가 비어 있습니다.");
+          sbPoll();
+          return rows.map(function(r){ return String(r.id); });
+        });
+    }
 
-    if (Store.mode === "rest")
-      return restCall({ action:"add", name:rec.name, prayer:rec.prayer, sender:rec.sender })
-        .then(function(j){ restPoll(); return j.id; });
+    if (Store.mode === "rest"){
+      return restCall({ action: "addMany", sender: sender, items: people })
+        .then(function(j){ restPoll(); return j.ids || []; });
+    }
 
-    if (Store.mode === "db")
-      return Store.db.collection("invites").add({
-        name: rec.name, prayer: rec.prayer, sender: rec.sender,
-        createdAt: new Date().toISOString(), ts: Date.now()
-      }).then(function(ref){ return ref.id; });
+    if (Store.mode === "firebase"){
+      return Promise.all(people.map(function(p, i){
+        return fetch(fbDocs() + "/invites?" + fbKey(), {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: {
+            name:     { stringValue: p.name },
+            relation: { stringValue: p.relation || "" },
+            sender:   { stringValue: sender || "" },
+            ts:       { integerValue: String(now + i) }
+          }})
+        }).then(function(r){ return r.json(); }).then(fbCheck)
+          .then(function(j){ return String(j.name || "").split("/").pop(); });
+      }));
+    }
 
-    var list = localRead();
-    var id = "l" + Date.now() + Math.floor(Math.random()*1000);
-    list.push({ id:id, name:rec.name, prayer:rec.prayer, sender:rec.sender, ts:Date.now() });
+    if (Store.mode === "db"){
+      return Promise.all(people.map(function(p, i){
+        return Store.db.collection("invites").add({
+          name: p.name, relation: p.relation || "", sender: sender || "",
+          createdAt: new Date(now + i).toISOString(), ts: now + i
+        }).then(function(ref){ return ref.id; });
+      }));
+    }
+
+    var list = localRead(), ids = [];
+    people.forEach(function(p, i){
+      var id = "l" + now + "-" + i + "-" + Math.floor(Math.random() * 1000);
+      ids.push(id);
+      list.push({ id: id, name: p.name, relation: p.relation || "", sender: sender || "", ts: now + i });
+    });
     localWrite(list); setItems(list);
-    return Promise.resolve(id);
+    return Promise.resolve(ids);
   };
 
-  Store.remove = function(id){
-    if (Store.mode === "supabase")
-      return sbDelete(id).then(function(){ sbPoll(); });
-
-    if (Store.mode === "firebase")
-      return fbDelete(id).then(function(){ fbPoll(); });
+  Store.removeMany = function(ids){
+    if (!ids || !ids.length) return Promise.resolve();
 
     if (Store.mode === "rest")
-      return restCall({ action:"delete", id:id }).then(function(){ restPoll(); });
+      return restCall({ action: "delete", ids: ids }).then(function(){ restPoll(); });
+
+    if (Store.mode === "supabase")
+      return fetch(sbRest("invites?id=in.(" + ids.map(encodeURIComponent).join(",") + ")"),
+                   { method: "DELETE", headers: sbHead() })
+        .then(function(r){
+          if (r.ok) return sbPoll();
+          return r.json().then(function(j){ throw new Error((j && j.message) || "삭제 실패"); });
+        });
+
+    if (Store.mode === "firebase")
+      return Promise.all(ids.map(function(id){
+        return fetch(fbDocs() + "/invites/" + encodeURIComponent(id) + "?" + fbKey(), { method: "DELETE" })
+          .then(function(r){ return r.json(); }).then(fbCheck);
+      }));
+
     if (Store.mode === "db")
-      return Store.db.collection("invites").doc(id).delete();
-    var list = localRead().filter(function(x){ return x.id !== id; });
-    localWrite(list); setItems(list);
+      return Promise.all(ids.map(function(id){
+        return Store.db.collection("invites").doc(id).delete();
+      }));
+
+    var keep = localRead().filter(function(x){ return ids.indexOf(x.id) < 0; });
+    localWrite(keep); setItems(keep);
     return Promise.resolve();
   };
 
@@ -1062,15 +1081,12 @@
         Store.mode = "db"; Store.db = db;
         db.doc("config/campaign").onSnapshot(function(s){
           var v = s.exists ? s.data() : null;
-          if (v && typeof v.goal === "number" && v.goal >= 1 && v.goal <= 200 && v.goal !== state.goal){
-            state.goal = Math.round(v.goal); renderAll();
-          }
           if (v && v.shareUrl){ state.shareUrl = v.shareUrl; drawQR(); }
         }, function(){});
         db.collection("invites").orderBy("createdAt","asc").limit(500).onSnapshot(function(snap){
           setItems(snap.docs.map(function(d){
             var v = d.data() || {};
-            return { id:d.id, name:v.name, prayer:v.prayer, sender:v.sender, ts:v.ts };
+            return { id:d.id, name:v.name, relation:v.relation, sender:v.sender, ts:v.ts };
           }));
           alertBoard("");
         }, function(e){ alertBoard(errText(e), true); });
@@ -1162,24 +1178,82 @@
   window.addEventListener("hashchange", route);
 
   /* ═══════════ 제출 ═══════════ */
+  /* ── 초대 줄 관리 ── */
+  function addRow(focus){
+    var wrap = document.createElement("div");
+    wrap.className = "row-inv";
+
+    var nm = document.createElement("input");
+    nm.type = "text"; nm.className = "in-name"; nm.maxLength = 40;
+    nm.autocomplete = "off"; nm.placeholder = "이름";
+
+    var rel = document.createElement("input");
+    rel.type = "text"; rel.className = "in-rel"; rel.maxLength = 30;
+    rel.autocomplete = "off"; rel.placeholder = "관계 (예: 친구)";
+
+    var del = document.createElement("button");
+    del.type = "button"; del.className = "row-del"; del.textContent = "X";
+    del.setAttribute("aria-label", "이 줄 지우기");
+    del.addEventListener("click", function(){
+      wrap.parentNode.removeChild(wrap);
+      if (!$("rows").children.length) addRow(true);
+      syncRows();
+    });
+
+    wrap.appendChild(nm); wrap.appendChild(rel); wrap.appendChild(del);
+    $("rows").appendChild(wrap);
+    syncRows();
+    if (focus) nm.focus();
+    return wrap;
+  }
+
+  function syncRows(){
+    var rows = $("rows").children;
+    for (var i = 0; i < rows.length; i++)
+      rows[i].querySelector(".row-del").disabled = (rows.length === 1);
+  }
+
+  function readRows(){
+    var out = [], rows = $("rows").children;
+    for (var i = 0; i < rows.length; i++){
+      var nm = rows[i].querySelector(".in-name").value.trim();
+      var rel = rows[i].querySelector(".in-rel").value.trim();
+      if (nm) out.push({ name: nm, relation: rel });
+    }
+    return out;
+  }
+
+  function resetRows(){
+    var box = $("rows");
+    while (box.firstChild) box.removeChild(box.firstChild);
+    addRow(false);
+  }
+
+  $("f-add").addEventListener("click", function(){ addRow(true); });
+  addRow(false);
+
+  /* ── 제출 ── */
   $("invite-form").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var name = $("f-name").value.trim();
-    var prayer = $("f-prayer").value.trim();
+    var people = readRows();
     var sender = $("f-sender").value.trim();
 
-    if (!name){ alertForm("초대할 사람의 이름을 적어주세요.", true); $("f-name").focus(); return; }
-    if (!prayer){ alertForm("기도제목을 적어주세요.", true); $("f-prayer").focus(); return; }
+    if (!people.length){
+      alertForm("초대할 사람의 이름을 적어주세요.", true);
+      var first = $("rows").querySelector(".in-name");
+      if (first) first.focus();
+      return;
+    }
 
     var btn = $("f-submit");
     btn.disabled = true; btn.textContent = "SENDING…";
     alertForm("");
 
-    Store.add({ name: name, prayer: prayer, sender: sender }).then(function(id){
-      state.lastId = id;
-      state.lastN = state.items.length + (Store.mode === "local" ? 0 : 1);
-      $("f-name").value = ""; $("f-prayer").value = "";
-      showDone(name);
+    Store.addMany(people, sender).then(function(ids){
+      state.lastIds = ids;
+      state.lastN = state.items.length + (Store.mode === "local" ? 0 : people.length);
+      resetRows();
+      showDone(people);
     }).catch(function(e){
       alertForm(errText(e), true);
     }).then(function(){
@@ -1199,71 +1273,40 @@
     }, 140);
   }
 
-  function showDone(who){
-    var n = Math.max(state.lastN, 1), goal = state.goal;
+  function showDone(people){
+    var n = Math.max(state.lastN, people.length), goal = state.goal;
     $("letter-form").hidden = true;
     $("letter-done").hidden = false;
     $("undo").disabled = false;
-    $("undo").textContent = "방금 보낸 것 취소";
-    $("done-name").textContent = "“" + who + "”";
+    $("undo").textContent = people.length > 1 ? "방금 보낸 " + people.length + "명 취소" : "방금 보낸 것 취소";
+    $("done-name").textContent = people.map(function(p){
+      return p.relation ? p.name + " (" + p.relation + ")" : p.name;
+    }).join(", ");
     if (n >= goal){
       $("done-head").textContent = "문이 열렸습니다";
       $("done-prog").textContent = "COIN " + goal + "/" + goal + "\n아버지가 아들을 안았습니다.";
     } else {
-      $("done-head").textContent = n + "번째 코인이 켜졌습니다";
+      $("done-head").textContent = people.length > 1
+        ? people.length + "명을 초대했습니다"
+        : n + "번째 코인이 켜졌습니다";
       $("done-prog").textContent = pad2(n) + " / " + pad2(goal) + "  ·  집까지 " + (goal - n) + "걸음";
     }
   }
-
-  $("f-diag").addEventListener("click", function(){
-    var box = $("diag");
-    box.hidden = false;
-    var lines = ["저장소 모드 : " + Store.mode];
-    if (Store.mode === "rest")     lines.push("서버 : " + SERVER_URL);
-    if (Store.mode === "supabase") lines.push("서버 : " + SUPABASE.url);
-    if (Store.mode === "firebase") lines.push("서버 : " + FIREBASE.projectId);
-    lines.push("현재 화면 : " + location.origin + location.pathname);
-    lines.push("받아온 초대 : " + state.items.length + "건");
-    lines.push("", "확인하는 중…");
-    box.textContent = lines.join("\n");
-
-    if (Store.mode !== "rest"){
-      lines[lines.length - 1] = Store.mode === "local"
-        ? "서버가 연결되지 않았습니다. index.html 의 SERVER_URL / SUPABASE 값을 확인하세요."
-        : "이 모드는 여기서 더 확인할 게 없습니다.";
-      box.textContent = lines.join("\n");
-      return;
-    }
-
-    var u = SERVER_URL + (SERVER_URL.indexOf("?") < 0 ? "?" : "&") + "action=list&t=" + Date.now();
-    fetch(u, { redirect: "follow" })
-      .then(function(r){
-        return r.text().then(function(t){ return { status: r.status, body: (t || "").trim() }; });
-      })
-      .then(function(res){
-        lines[lines.length - 1] = "HTTP " + res.status;
-        lines.push("응답 : " + res.body.slice(0, 300));
-        box.textContent = lines.join("\n");
-      })
-      .catch(function(e){
-        lines[lines.length - 1] = "연결 실패 : " + short(netErr(e));
-        box.textContent = lines.join("\n");
-      });
-  });
 
   $("again").addEventListener("click", function(){
     $("letter-done").hidden = true;
     $("letter-form").hidden = false;
     alertForm("");
-    $("f-name").focus();
+    var first = $("rows").querySelector(".in-name");
+    if (first) first.focus();
   });
 
   $("undo").addEventListener("click", function(){
-    if (!state.lastId) return;
+    if (!state.lastIds || !state.lastIds.length) return;
     var b = $("undo");
     b.disabled = true; b.textContent = "취소하는 중…";
-    Store.remove(state.lastId).then(function(){
-      state.lastId = null;
+    Store.removeMany(state.lastIds).then(function(){
+      state.lastIds = [];
       b.textContent = "취소되었습니다";
       $("done-head").textContent = "초대를 취소했습니다";
       $("done-name").textContent = "";

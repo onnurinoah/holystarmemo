@@ -7,7 +7,7 @@
 create table if not exists public.invites (
   id          bigint generated always as identity primary key,
   name        text   not null check (char_length(name)   between 1 and 40),
-  prayer      text   not null check (char_length(prayer) between 1 and 400),
+  relation    text   not null default '' check (char_length(relation) <= 30),
   sender      text   not null default '' check (char_length(sender) <= 30),
   ts          bigint not null,
   created_at  timestamptz not null default now()
