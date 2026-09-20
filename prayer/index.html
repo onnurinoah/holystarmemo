@@ -2,22 +2,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italianno&family=Jost:wght@200;300;400&family=Noto+Sans+KR:wght@200;300;400&display=swap">
-<meta name="theme-color" content="#070A10">
+<meta name="theme-color" content="#060910">
 <style>
-  /* 한 가지 세계로 고정한 화면입니다. 어둠에서 시작해 청사진으로, 끝내 집으로 갑니다. */
+  /* 한 장의 건축 도면으로 시작해, 기도가 쌓이면 집이 그려지고, 끝내 부피를 얻습니다. */
   :root{
-    --night:#070A10;
-    --blue:#7D91B3;          /* 도면이 다 그려졌을 때의 바탕 */
-    --line:#C3D2E8;
-    --line-dim:rgba(195,210,232,.28);
-    --gold:#F6E3A0;
-    --cream:#EEF2F8;
-    --muted:rgba(238,242,248,.55);
+    --night:#060910;
+    --paper:#7D91B3;
+    --line:#CBD8EC;
+    --gold:#F3DFA2;
+    --cream:#EDF1F7;
+    --muted:rgba(237,241,247,.52);
 
-    /* 실제 집 */
-    --r-wall:#E9E1D1; --r-roof:#46526A; --r-win:#F4C84E;
-    --r-door:#6E4A2C; --r-step:#D2C9B7; --r-chim:#8A6A52;
-    --r-ink:#2F3A4C; --r-lawn:#6E8B58;
+    --r-wall:#EFE7D8; --r-wall-s:#CCC2AE;
+    --r-roof:#4C5872;  --r-roof-top:#5E6C88; --r-roof-s:#343E54;
+    --r-win:#F6CC55;   --r-door:#6F4B2E;
+    --r-step:#DCD3C1;  --r-chim:#8D6C54;
+    --r-ink:#333E52;   --r-ground:#DCD6C8;
 
     --script:"Italianno",cursive;
     --sans:"Jost","Noto Sans KR",system-ui,sans-serif;
@@ -28,191 +28,220 @@
   body{
     margin:0;background:var(--night);color:var(--cream);
     font-family:var(--kr);font-weight:300;line-height:1.7;
-    transition:background-color 1.6s ease;
-    overscroll-behavior:none;
+    transition:background-color 1.6s ease;overscroll-behavior:none;
   }
-  /* 종이 결 — 참고 이미지의 바랜 질감 */
-  body::after{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.5;
+  body::after{  /* 청사진 용지의 바랜 결 */
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.45;
     background:
-      repeating-linear-gradient(107deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px),
-      repeating-linear-gradient(11deg,rgba(0,0,0,.05) 0 1px,transparent 1px 7px);
+      repeating-linear-gradient(103deg,rgba(255,255,255,.03) 0 1px,transparent 1px 6px),
+      repeating-linear-gradient(7deg,rgba(0,0,0,.045) 0 1px,transparent 1px 8px);
   }
   .view[hidden]{display:none!important}
 
-  /* 도면이 완성되면 바탕이 밝아집니다. 글자색을 통째로 뒤집어야 읽힙니다. */
+  /* 도면이 완성되면 바탕이 밝아집니다. 글자색 토큰을 통째로 뒤집어야 읽힙니다. */
   body.bright{
-    --gold:#8A6714; --cream:#28334A; --muted:rgba(40,51,74,.66);
-    --line:#5B6E8C; --line-dim:rgba(91,110,140,.3);
+    --gold:#8A6714; --cream:#242F44; --muted:rgba(36,47,68,.64); --line:#5B6E8C;
   }
-  .mark .w,.mark .h,.cta,.verse{transition:color 1.8s ease,border-color 1.8s ease}
+  .wm span,.cta,.verse,.rule{transition:color 1.8s ease,border-color 1.8s ease,background-color 1.8s ease}
 
-  /* ══ 집 화면 ══ */
+  /* ══════ 집 화면 ══════ */
   #view-house{
     min-height:100svh;display:flex;flex-direction:column;
-    padding:max(20px,env(safe-area-inset-top)) 20px max(22px,env(safe-area-inset-bottom));
-    gap:8px;
+    padding:max(18px,env(safe-area-inset-top)) 22px max(20px,env(safe-area-inset-bottom));
   }
-  .mark{text-align:center;flex:0 0 auto;padding-top:6px}
-  .mark .w{
-    font-family:var(--script);font-size:clamp(58px,17vw,104px);line-height:.78;
-    color:var(--gold);display:block;margin-bottom:-.12em
+  .wm{text-align:center;flex:0 0 auto;padding-top:4px}
+  .wm .w{
+    font-family:var(--script);font-size:clamp(66px,20vw,118px);line-height:.72;
+    color:var(--gold);display:block
   }
-  .mark .h{
-    font-family:var(--sans);font-weight:200;font-size:clamp(26px,8.4vw,50px);
-    letter-spacing:.14em;color:var(--gold);display:block;padding-left:.14em
+  .wm .h{
+    font-family:var(--sans);font-weight:200;font-size:clamp(23px,7.4vw,42px);
+    letter-spacing:.3em;color:var(--gold);display:block;
+    margin-top:-.34em;padding-left:.3em
   }
-  .stage{
-    flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center
+  .rule{
+    width:34px;height:1px;background:var(--gold);opacity:.5;
+    margin:15px auto 0;flex:0 0 auto
   }
-  .stage svg{width:100%;height:auto;max-height:100%;display:block}
   .verse{
-    flex:0 0 auto;text-align:center;margin:10px 0 0;font-size:12.5px;line-height:1.75;
-    color:var(--muted);letter-spacing:.01em;max-width:34ch;margin-inline:auto;
-    transition:color 1.6s ease
+    flex:0 0 auto;text-align:center;margin:15px auto 0;font-size:12.5px;line-height:1.85;
+    color:var(--muted);max-width:31ch;letter-spacing:.005em
   }
-  .verse em{display:block;font-style:normal;font-family:var(--sans);font-size:11px;
-            letter-spacing:.1em;margin-top:6px;opacity:.72}
+  .verse em{
+    display:block;font-style:normal;font-family:var(--sans);font-size:10px;
+    letter-spacing:.2em;margin-top:9px;opacity:.75
+  }
+  .stage{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
+  .stage svg{width:100%;height:auto;max-height:100%;display:block}
 
   .cta{
-    flex:0 0 auto;margin-top:14px;width:100%;min-height:56px;
-    font-family:var(--kr);font-weight:300;font-size:16px;letter-spacing:.06em;
-    color:var(--gold);background:transparent;border:1px solid var(--gold);
-    border-radius:2px;cursor:pointer;
-    transition:background-color .3s ease,color .3s ease
+    flex:0 0 auto;margin-top:16px;width:100%;min-height:56px;
+    font-family:var(--kr);font-weight:300;font-size:15.5px;letter-spacing:.09em;
+    color:var(--gold);background:transparent;border:1px solid currentColor;
+    border-radius:1px;cursor:pointer
   }
-  .cta:active{background:var(--gold);color:#241D06}
+  .cta:active{opacity:.6}
 
-  /* ══ 폼 ══ */
+  /* ══════ 기도 / 완료 ══════ */
   #view-form,#view-done{
     min-height:100svh;display:flex;flex-direction:column;
-    padding:max(18px,env(safe-area-inset-top)) 20px max(22px,env(safe-area-inset-bottom));
+    padding:max(16px,env(safe-area-inset-top)) 22px max(20px,env(safe-area-inset-bottom));
   }
-  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto}
   .back{
-    background:none;border:none;color:var(--muted);font-family:var(--sans);
-    font-size:12px;letter-spacing:.12em;cursor:pointer;padding:10px 2px;min-height:44px
+    flex:0 0 auto;align-self:flex-start;background:none;border:none;color:var(--muted);
+    font-family:var(--sans);font-size:11px;letter-spacing:.2em;cursor:pointer;
+    padding:12px 2px;min-height:44px
   }
-  .sheet{flex:1 1 auto;display:flex;flex-direction:column;gap:26px;padding:18px 0 4px;min-height:0}
-  .sheet h1{
-    font-family:var(--sans);font-weight:200;font-size:26px;letter-spacing:.02em;
-    margin:0;line-height:1.35
+  .sheet{flex:1 1 auto;display:flex;flex-direction:column;gap:30px;padding:10px 0 6px}
+  .head h1{
+    font-family:var(--kr);font-weight:200;font-size:25px;letter-spacing:-.01em;
+    margin:0;line-height:1.45
   }
-  .sheet h1 b{font-weight:400;color:var(--gold)}
-  .lede{margin:0;font-size:13.5px;color:var(--muted);line-height:1.75}
+  .head h1 b{font-weight:400;color:var(--gold)}
+  .head .rule{margin:16px 0 0;width:26px}
+  .lede{margin:14px 0 0;font-size:13px;color:var(--muted);line-height:1.85}
 
-  .field{display:flex;flex-direction:column;gap:10px}
+  .field{display:flex;flex-direction:column;gap:11px}
   .field label{
-    font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--gold);opacity:.9
+    font-family:var(--sans);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--gold);opacity:.85
   }
-  .field .sub{font-size:12px;color:var(--muted);margin:-4px 0 0}
-  textarea,input[type=text],input[type=number]{
+  .field .sub{font-size:11.5px;color:var(--muted);margin:-6px 0 0;letter-spacing:.01em}
+  textarea,input[type=text]{
     font-family:var(--kr);font-weight:300;font-size:16px;color:var(--cream);
-    background:rgba(255,255,255,.04);border:none;border-bottom:1px solid rgba(195,210,232,.3);
-    border-radius:0;padding:12px 2px;width:100%;resize:vertical;line-height:1.7
+    background:transparent;border:none;border-bottom:1px solid rgba(203,216,236,.22);
+    border-radius:0;padding:10px 0;width:100%;resize:vertical;line-height:1.8
   }
-  textarea::placeholder,input::placeholder{color:rgba(238,242,248,.3)}
-  textarea:focus,input:focus{outline:none;border-bottom-color:var(--gold);background:rgba(255,255,255,.07)}
-  textarea{min-height:92px}
+  textarea::placeholder,input::placeholder{color:rgba(237,241,247,.26)}
+  textarea:focus,input:focus{outline:none;border-bottom-color:var(--gold)}
+  textarea{min-height:76px}
 
-  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-  .chip{
-    min-height:52px;font-family:var(--kr);font-weight:300;font-size:15px;
-    color:var(--cream);background:transparent;border:1px solid rgba(195,210,232,.28);
-    border-radius:2px;cursor:pointer;transition:all .2s ease
+  /* 기도 시간 — 휠 피커 */
+  .picker{position:relative;height:198px;flex:0 0 auto}
+  .pscroll{
+    height:100%;overflow-y:auto;scroll-snap-type:y mandatory;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 26%,#000 74%,transparent 100%);
+    mask-image:linear-gradient(180deg,transparent 0,#000 26%,#000 74%,transparent 100%);
   }
-  .chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:rgba(246,227,160,.09)}
-  .custom{display:flex;align-items:baseline;gap:10px}
-  .custom input{max-width:110px;text-align:right}
-  .custom span{font-size:14px;color:var(--muted)}
-  .custom[hidden]{display:none}
+  .pscroll::-webkit-scrollbar{display:none}
+  .pscroll:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
+  .pad{height:77px}
+  .pitem{
+    height:44px;display:flex;align-items:center;justify-content:center;
+    scroll-snap-align:center;font-size:16px;color:var(--muted);letter-spacing:.02em;
+    transition:color .22s ease,font-size .22s ease,opacity .22s ease;opacity:.65;cursor:pointer
+  }
+  .pitem.on{color:var(--gold);font-size:22px;opacity:1;font-weight:200}
+  .pband{
+    position:absolute;left:-4px;right:-4px;top:77px;height:44px;pointer-events:none;
+    border-top:1px solid rgba(243,223,162,.32);border-bottom:1px solid rgba(243,223,162,.32)
+  }
+  .pband::before,.pband::after{
+    content:"";position:absolute;width:5px;height:1px;background:var(--gold);opacity:.75
+  }
+  .pband::before{left:0;top:-1px}
+  .pband::after{right:0;bottom:-1px}
 
   .submit{
-    flex:0 0 auto;margin-top:8px;width:100%;min-height:56px;
-    font-family:var(--kr);font-weight:300;font-size:16px;letter-spacing:.06em;
-    color:#241D06;background:var(--gold);border:none;border-radius:2px;cursor:pointer
+    flex:0 0 auto;margin-top:6px;width:100%;min-height:56px;
+    font-family:var(--kr);font-weight:300;font-size:15.5px;letter-spacing:.09em;
+    color:#241C05;background:var(--gold);border:none;border-radius:1px;cursor:pointer
   }
   .submit[disabled]{opacity:.45;cursor:progress}
-  .note{margin:0;font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+  .note{margin:0;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.8}
   .alert{
-    margin:0;font-size:13px;line-height:1.7;color:var(--gold);
-    border-left:1px solid var(--gold);padding:9px 12px;background:rgba(246,227,160,.07)
+    margin:0;font-size:13px;line-height:1.75;color:var(--gold);
+    border-left:1px solid currentColor;padding:8px 13px
   }
   .alert[hidden]{display:none}
-  .alert.bad{color:#F4B9A8;border-color:#C4614A;background:rgba(196,97,74,.1)}
+  .alert.bad{color:#EBA48F}
 
-  /* ══ 완료 ══ */
-  #view-done{justify-content:center;text-align:center;gap:22px}
-  .done-mark{font-family:var(--script);font-size:64px;color:var(--gold);line-height:.9}
-  .done-msg{margin:0;font-size:17px;line-height:1.85}
-  .done-sub{margin:0;font-size:13.5px;color:var(--muted);line-height:1.8;max-width:30ch;margin-inline:auto}
-  .done-actions{display:flex;flex-direction:column;gap:11px;margin-top:6px}
+  #view-done{justify-content:center;text-align:center;gap:20px}
+  .done-mark{font-family:var(--script);font-size:72px;color:var(--gold);line-height:.85}
+  .done-msg{margin:0;font-size:17px;line-height:1.85;letter-spacing:.01em}
+  .done-sub{margin:0;font-size:13px;color:var(--muted);line-height:1.9;max-width:28ch;margin-inline:auto}
+  .done-actions{display:flex;flex-direction:column;gap:11px;margin-top:10px}
 
-  /* ══ 도면 ══ */
+  /* ══════ 도면 ══════ */
   .grid-bg line{stroke:var(--line);stroke-width:.4}
+  #sheet path,#sheet line{fill:none;stroke:var(--line);stroke-width:.7}
+  #sheet text{fill:var(--line);font-family:var(--sans);font-weight:300}
+  #sheet,#dims{transition:opacity 1.6s ease}
   #house path{
-    fill:transparent;stroke:var(--line);stroke-width:1.1;
+    fill:transparent;stroke:var(--line);stroke-width:1.6;
     stroke-linecap:square;stroke-linejoin:miter;
-    transition:fill 2.4s ease,stroke 2.4s ease,stroke-width 2.4s ease
+    transition:fill 2s ease,stroke 2s ease,stroke-width 2s ease
   }
-  #house path.thin{stroke-width:.7}
-  #glow{transition:opacity 2.4s ease}
+  #house path.thin{stroke-width:1.05}
+  #house path.bold{stroke-width:2.15}
+  #solid path{stroke:none;opacity:0}
+  #glow,#ground{opacity:0;transition:opacity 2.2s ease}
 
-  /* 완성 — 실제 집.
+  /* 완성 — 실물.
      기본 규칙이 #house path 라 특이도가 높습니다. 여기서도 #house 를 붙여야 이깁니다. */
-  svg.real .grid-bg{opacity:0}
-  svg.real #glow{opacity:1}
-  svg.real #house path{stroke:var(--r-ink);stroke-width:.8}
+  svg.real .grid-bg,svg.real #sheet,svg.real #dims{opacity:0}
+  svg.real #glow,svg.real #ground{opacity:1}
+  svg.real #house path{stroke:var(--r-ink);stroke-width:.95}
   svg.real #house path.wall{fill:var(--r-wall)}
-  svg.real #house path.roof,
-  svg.real #house path.dormer{fill:var(--r-roof)}
+  svg.real #house path.roof,svg.real #house path.dormer{fill:var(--r-roof)}
   svg.real #house path.chim{fill:var(--r-chim)}
   svg.real #house path.win{fill:var(--r-win)}
   svg.real #house path.door{fill:var(--r-door)}
   svg.real #house path.step{fill:var(--r-step)}
-  svg.real #house path.cornice{fill:#D8CFBD}
-  svg.real #house path.mull{stroke:rgba(47,58,76,.5)}
+  svg.real #house path.cornice{fill:#E2D9C6}
+  svg.real #house path.mull{stroke:rgba(51,62,82,.45)}
 
-  @media (prefers-reduced-motion:reduce){
-    *{transition-duration:.01ms!important;animation:none!important}
-  }
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
   @media (min-width:700px){
-    #view-house,#view-form,#view-done{max-width:520px;margin-inline:auto}
-    .stage svg{max-height:56svh}
+    #view-house,#view-form,#view-done{max-width:500px;margin-inline:auto}
   }
 </style>
 
 <!-- ══════════ 집 ══════════ -->
 <section class="view" id="view-house">
-  <div class="mark">
-    <span class="w">Welcome</span>
-    <span class="h">HOME</span>
-  </div>
-
-  <p class="verse" id="verse">
+  <div class="wm"><span class="w">Welcome</span><span class="h">HOME</span></div>
+  <div class="rule"></div>
+  <p class="verse">
     그러나 그때는 하나님에게서 멀리 떨어져 있던 여러분이 이제는
     그리스도 예수 안에서 그리스도의 피로 가까워졌습니다
-    <em>에베소서 2:13</em>
+    <em>EPHESIANS 2:13</em>
   </p>
 
   <div class="stage">
-    <svg id="blueprint" viewBox="0 44 400 268" preserveAspectRatio="xMidYMid meet"
-         role="img" aria-labelledby="bp-title bp-desc">
-      <title id="bp-title">기도로 짓는 집</title>
-      <desc id="bp-desc">기도 시간이 쌓일수록 어둠 속에서 집의 도면이 아래에서 위로 한 획씩 그려집니다.</desc>
+    <svg id="blueprint" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet"
+         role="img" aria-labelledby="bp-t bp-d">
+      <title id="bp-t">기도로 짓는 집</title>
+      <desc id="bp-d">기도 시간이 쌓일수록 빈 도면 위에 집이 아래에서 위로 그려지고, 다 채워지면 도면이 실제로 지어진 집이 됩니다.</desc>
 
       <defs>
         <radialGradient id="g-glow" cx=".5" cy=".5" r=".5">
-          <stop offset="0" stop-color="#F4C84E" stop-opacity=".5"/>
-          <stop offset="1" stop-color="#F4C84E" stop-opacity="0"/>
+          <stop offset="0" stop-color="#F6CC55" stop-opacity=".42"/>
+          <stop offset="1" stop-color="#F6CC55" stop-opacity="0"/>
         </radialGradient>
       </defs>
 
-      <g id="glow" opacity="0"></g>
-
       <g class="grid-bg" id="grid" opacity="0"></g>
-      <g id="house"></g>
+
+      <!-- 도면 용지 — 기도가 없어도 용지는 먼저 놓여 있습니다 -->
+      <g id="sheet" opacity=".1">
+        <path d="M14 14 H386 V306 H14 Z"/>
+        <path d="M14 30 V14 H30" class="tick"/><path d="M370 14 H386 V30"/>
+        <path d="M386 290 V306 H370"/><path d="M30 306 H14 V290"/>
+        <path d="M262 262 H386 M262 262 V306 M262 280 H386"/>
+        <text x="270" y="275" font-size="7.5" letter-spacing="1.6">WELCOME HOME</text>
+        <text x="270" y="291" font-size="5.4" letter-spacing="1.1" opacity=".8">FRONT ELEVATION</text>
+        <text x="270" y="301" font-size="5.4" letter-spacing="1.1" opacity=".8">SCALE 1:100</text>
+      </g>
+
+      <!-- 도면 테두리와 표제란 안쪽에 앉히기 위한 배치입니다. -->
+      <g id="draw" transform="translate(22,15) scale(0.8)">
+        <g id="ground"></g>
+        <g id="solid"></g>
+        <g id="glow"></g>
+        <g id="house"></g>
+        <g id="dims" opacity="0"></g>
+      </g>
     </svg>
   </div>
 
@@ -221,13 +250,12 @@
 
 <!-- ══════════ 기도 ══════════ -->
 <section class="view" id="view-form" hidden>
-  <div class="top">
-    <button class="back" type="button" id="form-back">&larr; 돌아가기</button>
-  </div>
+  <button class="back" type="button" id="form-back">&larr; BACK</button>
 
   <div class="sheet">
-    <div>
-      <h1>이 집은 <b>기도</b>로 지어집니다.</h1>
+    <div class="head">
+      <h1>이 집은 <b>기도</b>로<br>지어집니다.</h1>
+      <div class="rule"></div>
       <p class="lede">드리실 기도의 제목과, 그 가운데 주신 마음의 감동을 남겨주세요.
         드린 시간만큼 도면의 선이 한 겹 더 그려집니다.</p>
     </div>
@@ -241,16 +269,16 @@
 
     <div class="field">
       <label for="f-heart">마음의 감동</label>
-      <p class="sub">선택 — 기도 중에 주신 마음이 있다면 적어주세요.</p>
-      <textarea id="f-heart" maxlength="500" placeholder=""></textarea>
+      <p class="sub">선택 — 기도 중에 주신 마음이 있다면</p>
+      <textarea id="f-heart" maxlength="500"></textarea>
     </div>
 
     <div class="field">
       <label>기도 시간</label>
-      <div class="chips" id="chips"></div>
-      <div class="custom" id="custom" hidden>
-        <input type="number" id="f-hours" min="0.5" max="100" step="0.5" inputmode="decimal">
-        <span>시간</span>
+      <div class="picker">
+        <div class="pscroll" id="pscroll" tabindex="0" role="listbox"
+             aria-label="기도 시간 선택"></div>
+        <div class="pband"></div>
       </div>
     </div>
 
@@ -269,10 +297,11 @@
 <section class="view" id="view-done" hidden>
   <div class="done-mark">Amen</div>
   <p class="done-msg">기도가 더해졌습니다.</p>
-  <p class="done-sub" id="done-sub">벽 한 줄이 더 올라갔습니다. 함께 드린 기도가 이 집을 세웁니다.</p>
+  <p class="done-sub">선 한 겹이 더 그려졌습니다.<br>함께 드린 기도가 이 집을 세웁니다.</p>
   <div class="done-actions">
     <button class="cta" type="button" id="done-again">한 번 더 기도하기</button>
-    <button class="cta" type="button" id="done-home" style="border-color:rgba(195,210,232,.3);color:var(--muted)">집 보러 가기</button>
+    <button class="cta" type="button" id="done-home"
+            style="color:var(--muted)">집 보러 가기</button>
   </div>
 </section>
 
@@ -280,15 +309,13 @@
 (function(){
   "use strict";
 
-  /* ═══════ 설정 ═══════
-     SERVER_URL: Google Apps Script 웹앱 주소 (server/Code.gs 참고)
-     SUPABASE:   Supabase 프로젝트 URL 과 anon 키
-     둘 다 비우면 이 기기에만 쌓이는 데모로 동작합니다. */
+  /* ═══════ 설정 ═══════ */
   var SERVER_URL = "";
   var SUPABASE   = { url: "", anonKey: "" };
   var GOAL_HOURS = 1000;
 
   var $ = function(id){ return document.getElementById(id); };
+  var SVGNS = "http://www.w3.org/2000/svg";
   var qs = new URLSearchParams(location.search);
   try {
     if (qs.get("server")) localStorage.setItem("hb.server", qs.get("server"));
@@ -300,95 +327,104 @@
     }
   } catch(e){}
 
-  var state = { hours: 0, ready: false };
+  var state = { hours: 0 };
 
   /* ═══════ 집의 설계 ═══════
      a,b = 전체 진행도(0~1) 중 이 선이 그려지는 구간.
-     아래에서 위로 — 지반, 벽, 창, 문, 처마, 지붕, 굴뚝 순서입니다. */
-  var GROUND = 300;
-
+     아래에서 위로 — 지반, 벽, 창, 현관, 처마, 지붕, 굴뚝 순서입니다. */
   function win(x, w, y, h, arch){
-    var r = w / 2, top = y;
-    if (arch) return "M" + x + " " + (y + h) + " V" + (top + r) +
-                     " A" + r + " " + r + " 0 0 1 " + (x + w) + " " + (top + r) +
-                     " V" + (y + h) + " Z";
-    return "M" + x + " " + (y + h) + " V" + y + " H" + (x + w) + " V" + (y + h) + " Z";
+    var r = w / 2;
+    if (arch) return "M" + x + " " + (y+h) + " V" + (y+r) +
+                     " A" + r + " " + r + " 0 0 1 " + (x+w) + " " + (y+r) +
+                     " V" + (y+h) + " Z";
+    return "M" + x + " " + (y+h) + " V" + y + " H" + (x+w) + " V" + (y+h) + " Z";
   }
 
-  var LOW  = [102, 140, 234, 272];   // 본채 1층 창 x
-  var UP   = [102, 140, 234, 272];   // 2층 창 x
+  var COLS = [102, 140, 234, 272];
   var PARTS = [];
-
   function add(d, cls, a, b){ PARTS.push({ d: d, cls: cls || "", a: a, b: b }); }
 
-  /* 지반과 기단 */
   add("M10 300 H390", "thin", 0.000, 0.035);
   add("M40 288 H360", "thin", 0.035, 0.060);
 
-  /* 본채와 날개채 */
-  add("M90 300 V150 H310 V300 Z",  "wall", 0.060, 0.170);
-  add("M40 300 V205 H90 V300 Z",   "wall", 0.170, 0.215);
-  add("M360 300 V205 H310 V300 Z", "wall", 0.170, 0.215);
+  add("M90 300 V150 H310 V300 Z",  "wall bold", 0.060, 0.170);
+  add("M40 300 V205 H90 V300 Z",   "wall bold", 0.170, 0.215);
+  add("M360 300 V205 H310 V300 Z", "wall bold", 0.170, 0.215);
   add("M34 205 H96",  "thin", 0.215, 0.235);
   add("M304 205 H366","thin", 0.215, 0.235);
 
-  /* 1층 창 */
-  LOW.forEach(function(x, i){
-    add(win(x, 26, 236, 46, false), "win", 0.245 + i * 0.026, 0.271 + i * 0.026);
+  COLS.forEach(function(x, i){
+    add(win(x, 26, 236, 46, false), "win", 0.245 + i*0.026, 0.271 + i*0.026);
   });
   add(win(52, 26, 236, 46, false),  "win", 0.349, 0.372);
   add(win(322, 26, 236, 46, false), "win", 0.349, 0.372);
 
-  /* 현관 — 계단, 박공, 아치문 */
   add("M164 296 H236 V300 H164 Z", "step", 0.378, 0.396);
   add("M170 292 H230 V296 H170 Z", "step", 0.396, 0.412);
   add("M176 288 H224 V292 H176 Z", "step", 0.412, 0.428);
   add("M185 288 V247 A15 15 0 0 1 215 247 V288 Z", "door", 0.428, 0.474);
   add("M176 247 L200 232 L224 247", "", 0.474, 0.500);
 
-  /* 2층 창과 발코니 */
-  UP.forEach(function(x, i){
-    add(win(x, 26, 170, 46, true), "win", 0.510 + i * 0.026, 0.536 + i * 0.026);
+  COLS.forEach(function(x, i){
+    add(win(x, 26, 170, 46, true), "win", 0.510 + i*0.026, 0.536 + i*0.026);
   });
   add(win(187, 26, 170, 46, true), "win", 0.614, 0.642);
   add("M180 216 H220 V224 H180 Z", "thin", 0.642, 0.660);
 
-  /* 처마 */
   add("M82 152 H318 V144 H82 Z", "cornice", 0.660, 0.706);
+  add("M82 144 L108 92 H292 L318 144 Z", "roof bold", 0.706, 0.830);
 
-  /* 지붕 */
-  add("M82 144 L108 92 H292 L318 144 Z", "roof", 0.706, 0.830);
-
-  /* 지붕창 */
   [140, 200, 260].forEach(function(c, i){
     add("M" + (c-12) + " 122 V106 L" + c + " 96 L" + (c+12) + " 106 V122 Z",
-        "dormer", 0.830 + i * 0.030, 0.860 + i * 0.030);
+        "dormer", 0.830 + i*0.030, 0.860 + i*0.030);
   });
 
-  /* 굴뚝 */
   add("M120 94 V58 H134 V94 Z", "chim", 0.920, 0.950);
   add("M266 94 V58 H280 V94 Z", "chim", 0.920, 0.950);
   add("M116 58 H138", "thin", 0.950, 0.962);
   add("M262 58 H284", "thin", 0.950, 0.962);
 
-  /* 창살과 문살 — 마지막 한 겹 */
   function mull(x, w, y, h){
-    add("M" + (x + w/2) + " " + y + " V" + (y + h), "thin mull", 0.962, 1.000);
-    add("M" + x + " " + (y + h * 0.42) + " H" + (x + w), "thin mull", 0.962, 1.000);
+    add("M" + (x + w/2) + " " + y + " V" + (y+h), "thin mull", 0.962, 1.000);
+    add("M" + x + " " + (y + h*0.42) + " H" + (x+w), "thin mull", 0.962, 1.000);
   }
-  LOW.forEach(function(x){ mull(x, 26, 236, 46); });
-  UP.forEach(function(x){ mull(x, 26, 176, 40); });
+  COLS.forEach(function(x){ mull(x, 26, 236, 46); });
+  COLS.forEach(function(x){ mull(x, 26, 176, 40); });
   mull(187, 26, 176, 40); mull(52, 26, 236, 46); mull(322, 26, 236, 46);
   add("M200 288 V240", "thin mull", 0.962, 1.000);
   [140, 200, 260].forEach(function(c){
     add("M" + (c-6) + " 120 V110 H" + (c+6) + " V120", "thin", 0.962, 1.000);
   });
 
-  /* ═══════ 그리기 ═══════ */
-  var SVGNS = "http://www.w3.org/2000/svg";
-  var nodes = [];
+  /* ═══════ 입체 ═══════
+     완성되면 입면도가 두께를 얻습니다. 모서리를 한 방향으로 밀어내
+     옆면과 지붕면을 만듭니다 — 도면이 부피를 갖는 순간입니다. */
+  var DX = 46, DY = -34;
+  function face(a, b, t, k){
+    var d = t * (k || 1);
+    var ax = a[0] + DX*d, ay = a[1] + DY*d;
+    var bx = b[0] + DX*d, by = b[1] + DY*d;
+    return "M" + a[0] + " " + a[1] + " L" + b[0] + " " + b[1] +
+           " L" + bx + " " + by + " L" + ax + " " + ay + " Z";
+  }
+  var FACES = [
+    { a:[40,300],  b:[360,300], fill:"var(--r-ground)", id:"ground" },
+    { a:[108,92],  b:[292,92],  fill:"var(--r-roof-top)" },
+    { a:[292,92],  b:[318,144], fill:"var(--r-roof-s)" },
+    { a:[40,205],  b:[90,205],  fill:"var(--r-wall-s)" },
+    { a:[310,205], b:[360,205], fill:"var(--r-wall-s)" },
+    { a:[310,150], b:[310,300], fill:"var(--r-wall-s)" },
+    { a:[360,205], b:[360,300], fill:"var(--r-wall-s)" },
+    { a:[120,58],  b:[134,58],  fill:"var(--r-chim)", k:0.3 },
+    { a:[134,58],  b:[134,94],  fill:"#6F543F", k:0.3 },
+    { a:[266,58],  b:[280,58],  fill:"var(--r-chim)", k:0.3 },
+    { a:[280,58],  b:[280,94],  fill:"#6F543F", k:0.3 }
+  ];
 
-  function buildHouse(){
+  /* ═══════ 그리기 ═══════ */
+  var nodes = [], solidNodes = [], groundNode = null;
+
+  function buildScene(){
     var g = $("house");
     PARTS.forEach(function(p){
       var el = document.createElementNS(SVGNS, "path");
@@ -401,36 +437,75 @@
       nodes.push({ el: el, a: p.a, b: p.b });
     });
 
+    FACES.forEach(function(f){
+      var el = document.createElementNS(SVGNS, "path");
+      el.setAttribute("fill", f.fill);
+      el.setAttribute("d", face(f.a, f.b, 0, f.k));
+      (f.id === "ground" ? $("ground") : $("solid")).appendChild(el);
+      if (f.id === "ground") groundNode = { el: el, f: f };
+      else solidNodes.push({ el: el, f: f });
+    });
+
     var glow = $("glow");
     [[102,236],[140,236],[234,236],[272,236],[52,236],[322,236],
      [102,176],[140,176],[234,176],[272,176],[187,176]].forEach(function(w){
       var c = document.createElementNS(SVGNS, "circle");
       c.setAttribute("cx", w[0] + 13); c.setAttribute("cy", w[1] + 22);
-      c.setAttribute("r", 34); c.setAttribute("fill", "url(#g-glow)");
+      c.setAttribute("r", 32); c.setAttribute("fill", "url(#g-glow)");
       glow.appendChild(c);
     });
 
+    /* 기준 축선과 치수선 — 마지막에 얹히는 도면 표기 */
+    var dims = $("dims");
+    var axis = document.createElementNS(SVGNS, "path");
+    axis.setAttribute("d", "M200 70 V312");
+    axis.setAttribute("stroke", "var(--line)"); axis.setAttribute("fill", "none");
+    axis.setAttribute("stroke-width", ".5");
+    axis.setAttribute("stroke-dasharray", "9 3 1.5 3");
+    axis.setAttribute("opacity", ".45");
+    dims.appendChild(axis);
+    var dim = document.createElementNS(SVGNS, "path");
+    dim.setAttribute("d", "M2 92 V300 M-4 92 H8 M-4 300 H8 M8 92 H104 M8 300 H36");
+    dim.setAttribute("stroke", "var(--line)"); dim.setAttribute("fill", "none");
+    dim.setAttribute("stroke-width", ".5"); dim.setAttribute("opacity", ".55");
+    dims.appendChild(dim);
+
     var grid = $("grid");
-    for (var x = 0; x <= 400; x += 25){
-      var v = document.createElementNS(SVGNS, "line");
-      v.setAttribute("x1", x); v.setAttribute("y1", 0);
-      v.setAttribute("x2", x); v.setAttribute("y2", 330);
-      grid.appendChild(v);
-    }
-    for (var y = 0; y <= 330; y += 25){
-      var h = document.createElementNS(SVGNS, "line");
-      h.setAttribute("x1", 0);   h.setAttribute("y1", y);
-      h.setAttribute("x2", 400); h.setAttribute("y2", y);
-      grid.appendChild(h);
-    }
+    for (var x = 0; x <= 400; x += 20) grid.appendChild(gridLine(x, 0, x, 320));
+    for (var y = 0; y <= 320; y += 20) grid.appendChild(gridLine(0, y, 400, y));
+  }
+  function gridLine(x1, y1, x2, y2){
+    var l = document.createElementNS(SVGNS, "line");
+    l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+    l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+    return l;
   }
 
   function clamp(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
-
   function lerpHex(c1, c2, t){
     var a = [parseInt(c1.substr(1,2),16), parseInt(c1.substr(3,2),16), parseInt(c1.substr(5,2),16)];
     var b = [parseInt(c2.substr(1,2),16), parseInt(c2.substr(3,2),16), parseInt(c2.substr(5,2),16)];
     return "rgb(" + a.map(function(v,i){ return Math.round(v + (b[i]-v)*t); }).join(",") + ")";
+  }
+
+  /* 입체화 — 완성 순간 한 번만 재생합니다. */
+  var raised = 0, rising = false;
+  function setDepth(t){
+    raised = t;
+    solidNodes.forEach(function(n){ n.el.setAttribute("d", face(n.f.a, n.f.b, t, n.f.k)); n.el.style.opacity = t > 0 ? "1" : "0"; });
+    if (groundNode){ groundNode.el.setAttribute("d", face(groundNode.f.a, groundNode.f.b, t, groundNode.f.k)); }
+  }
+  function rise(){
+    if (rising) return;
+    rising = true;
+    var t0 = 0;
+    function step(ts){
+      if (!t0) t0 = ts;
+      var k = clamp((ts - t0) / 1900);
+      setDepth(1 - Math.pow(1 - k, 3));
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
   }
 
   function render(){
@@ -443,20 +518,21 @@
       n.el.style.opacity = local > 0 ? "1" : "0";
     });
 
-    /* 어둠에서 청사진 바탕으로 */
-    document.body.style.backgroundColor = lerpHex("#070A10", "#7D91B3", Math.pow(p, 0.75));
-    $("grid").style.opacity = done ? "0" : String((0.06 + p * 0.10).toFixed(3));
-    /* 어두운 구간에서는 글자를 조금씩 또렷하게, 완성되면 토큰 자체를 뒤집습니다. */
+    document.body.style.backgroundColor = done
+      ? "#C9D5E6"
+      : lerpHex("#060910", "#7D91B3", Math.pow(p, 0.75));
     document.body.classList.toggle("bright", done);
-    $("verse").style.color = done ? "" : "rgba(238,242,248," + (0.5 + p * 0.34).toFixed(3) + ")";
 
+    $("grid").style.opacity = done ? "0" : String((0.05 + p*0.09).toFixed(3));
+    $("sheet").style.opacity = done ? "0" : String((0.10 + p*0.52).toFixed(3));
+    $("dims").style.opacity = done ? "0" : String(clamp((p - 0.9) / 0.08).toFixed(3));
     $("blueprint").classList.toggle("real", done);
-    if (done) document.body.style.backgroundColor = "#C6D3E4";
+
+    if (done) rise(); else if (raised) setDepth(0);
   }
 
   /* ═══════ 저장소 ═══════ */
   var Store = { mode: "none" };
-
   function alertForm(msg, bad){
     var n = $("form-alert");
     n.classList.toggle("bad", !!bad);
@@ -467,13 +543,11 @@
     var m = (e && e.message) ? String(e.message) : "";
     return m.length > 110 ? m.slice(0, 110) + "…" : m;
   }
-
   function sumHours(rows){
     return rows.reduce(function(a, r){ return a + (Number(r.hours) || 0); }, 0);
   }
-  function setHours(h){ state.hours = h; state.ready = true; render(); }
+  function setHours(h){ state.hours = h; render(); }
 
-  /* Apps Script */
   function restRead(r){
     return r.text().then(function(t){
       var s = (t || "").trim();
@@ -489,14 +563,9 @@
     fetch(SERVER_URL + (SERVER_URL.indexOf("?") < 0 ? "?" : "&") + "action=total&t=" + Date.now(),
           { redirect: "follow" })
       .then(restRead)
-      .then(function(j){
-        if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "서버가 요청을 거절했습니다.");
-        setHours(Number(j.hours) || 0);
-      })
-      .catch(function(){ /* 화면은 마지막 상태를 유지합니다 */ });
+      .then(function(j){ if (j && j.ok) setHours(Number(j.hours) || 0); })
+      .catch(function(){});
   }
-
-  /* Supabase */
   function sbHead(extra){
     var h = { apikey: SUPABASE.anonKey, Authorization: "Bearer " + SUPABASE.anonKey };
     if (extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
@@ -509,7 +578,6 @@
       .then(function(j){ if (Array.isArray(j)) setHours(sumHours(j)); })
       .catch(function(){});
   }
-
   var LOCAL_KEY = "hb.prayers";
   function localRead(){
     try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); } catch(e){ return []; }
@@ -540,8 +608,7 @@
 
     if (Store.mode === "db")
       return Store.db.collection("prayers").add({
-        topic: rec.topic, heart: rec.heart, hours: rec.hours,
-        name: rec.name, ts: Date.now()
+        topic: rec.topic, heart: rec.heart, hours: rec.hours, name: rec.name, ts: Date.now()
       });
 
     var list = localRead();
@@ -554,15 +621,11 @@
   function startStore(){
     if (SERVER_URL){
       Store.mode = "rest"; restPoll();
-      setInterval(restPoll, 6000);
-      window.addEventListener("focus", restPoll);
-      return;
+      setInterval(restPoll, 6000); window.addEventListener("focus", restPoll); return;
     }
     if (SUPABASE.url && SUPABASE.anonKey){
       Store.mode = "supabase"; sbPoll();
-      setInterval(sbPoll, 6000);
-      window.addEventListener("focus", sbPoll);
-      return;
+      setInterval(sbPoll, 6000); window.addEventListener("focus", sbPoll); return;
     }
     var c = window.claude;
     if (c && typeof c.use === "function"){
@@ -577,47 +640,62 @@
     }
     goLocal();
   }
-  function goLocal(){
-    Store.mode = "local";
-    setHours(sumHours(localRead()));
-  }
+  function goLocal(){ Store.mode = "local"; setHours(sumHours(localRead())); }
 
-  /* ═══════ 시간 선택 ═══════ */
-  var CHOICES = [
-    { h: 0.5, label: "30분" }, { h: 1, label: "1시간" }, { h: 2, label: "2시간" },
-    { h: 3, label: "3시간" },  { h: 5, label: "5시간" }, { h: 0, label: "직접 입력" }
+  /* ═══════ 기도 시간 휠 ═══════ */
+  var HOURS = [
+    { h:0.5, l:"30분" },  { h:1, l:"1시간" },  { h:1.5, l:"1시간 30분" },
+    { h:2, l:"2시간" },   { h:2.5, l:"2시간 30분" }, { h:3, l:"3시간" },
+    { h:4, l:"4시간" },   { h:5, l:"5시간" },  { h:6, l:"6시간" },
+    { h:8, l:"8시간" },   { h:10, l:"10시간" },{ h:12, l:"12시간" },
+    { h:15, l:"15시간" }, { h:20, l:"20시간" },{ h:24, l:"24시간" }
   ];
-  var picked = 1;
+  var ITEM = 44, pIndex = 1, pTimer = null;
 
-  function buildChips(){
-    var box = $("chips");
-    CHOICES.forEach(function(c){
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "chip"; b.textContent = c.label;
-      b.setAttribute("aria-pressed", String(c.h === picked));
-      b.addEventListener("click", function(){
-        picked = c.h;
-        Array.prototype.forEach.call(box.children, function(n, i){
-          n.setAttribute("aria-pressed", String(CHOICES[i].h === picked));
-        });
-        $("custom").hidden = c.h !== 0;
-        if (c.h === 0) $("f-hours").focus();
-      });
-      box.appendChild(b);
+  function buildPicker(){
+    var sc = $("pscroll");
+    var top = document.createElement("div"); top.className = "pad"; sc.appendChild(top);
+    HOURS.forEach(function(o, i){
+      var d = document.createElement("div");
+      d.className = "pitem"; d.textContent = o.l;
+      d.setAttribute("role", "option");
+      d.addEventListener("click", function(){ pickTo(i); });
+      sc.appendChild(d);
+    });
+    var bot = document.createElement("div"); bot.className = "pad"; sc.appendChild(bot);
+
+    sc.addEventListener("scroll", function(){
+      var i = Math.round(sc.scrollTop / ITEM);
+      i = Math.max(0, Math.min(HOURS.length - 1, i));
+      if (i !== pIndex){ pIndex = i; paintPicker(); }
+      if (pTimer) clearTimeout(pTimer);
+      pTimer = setTimeout(paintPicker, 120);
+    }, { passive: true });
+
+    sc.addEventListener("keydown", function(e){
+      if (e.key === "ArrowDown"){ e.preventDefault(); pickTo(Math.min(pIndex + 1, HOURS.length - 1)); }
+      if (e.key === "ArrowUp"){ e.preventDefault(); pickTo(Math.max(pIndex - 1, 0)); }
     });
   }
-  function chosenHours(){
-    if (picked !== 0) return picked;
-    var v = parseFloat($("f-hours").value);
-    return isFinite(v) ? v : 0;
+  function paintPicker(){
+    var items = $("pscroll").querySelectorAll(".pitem");
+    for (var k = 0; k < items.length; k++){
+      items[k].classList.toggle("on", k === pIndex);
+      items[k].setAttribute("aria-selected", String(k === pIndex));
+    }
+  }
+  function pickTo(i, instant){
+    pIndex = i; paintPicker();
+    var sc = $("pscroll");
+    if (instant) sc.scrollTop = i * ITEM;
+    else sc.scrollTo({ top: i * ITEM, behavior: "smooth" });
   }
 
-  /* ═══════ 화면 전환 ═══════ */
+  /* ═══════ 화면 ═══════ */
   function show(which){
-    ["house", "form", "done"].forEach(function(v){
-      $("view-" + v).hidden = (v !== which);
-    });
+    ["house", "form", "done"].forEach(function(v){ $("view-" + v).hidden = (v !== which); });
     window.scrollTo(0, 0);
+    if (which === "form") pickTo(pIndex, true);   /* 숨겨진 동안에는 스크롤이 먹지 않습니다 */
   }
 
   $("pray-open").addEventListener("click", function(){ alertForm(""); show("form"); });
@@ -630,30 +708,21 @@
 
   $("f-submit").addEventListener("click", function(){
     var topic = $("f-topic").value.trim();
-    var heart = $("f-heart").value.trim();
-    var name  = $("f-name").value.trim();
-    var hours = chosenHours();
-
     if (!topic){ alertForm("기도제목을 적어주세요.", true); $("f-topic").focus(); return; }
-    if (!(hours > 0)){ alertForm("기도 시간을 골라주세요.", true); return; }
-    if (hours > 100){ alertForm("한 번에 올릴 수 있는 시간은 100시간까지입니다.", true); return; }
 
     var btn = $("f-submit");
     btn.disabled = true; btn.textContent = "올리는 중…";
     alertForm("");
 
-    Store.add({ topic: topic, heart: heart, hours: hours, name: name })
-      .then(function(){
-        if (Store.mode === "local" || Store.mode === "db") { /* 폴링 없이 바로 반영됩니다 */ }
-        show("done");
-      })
-      .catch(function(e){ alertForm(short(e) || "저장에 실패했습니다. 다시 시도해주세요.", true); })
+    Store.add({ topic: topic, heart: $("f-heart").value.trim(),
+                hours: HOURS[pIndex].h, name: $("f-name").value.trim() })
+      .then(function(){ show("done"); })
+      .catch(function(e){ alertForm(short(e) || "저장에 실패했습니다.", true); })
       .then(function(){ btn.disabled = false; btn.textContent = "기도 올려드리기"; });
   });
 
-  /* ═══════ 시작 ═══════ */
-  buildHouse();
-  buildChips();
+  buildScene();
+  buildPicker();
   render();
   startStore();
 })();
