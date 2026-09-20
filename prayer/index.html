@@ -1,0 +1,660 @@
+<title>기도로 짓는 집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italianno&family=Jost:wght@200;300;400&family=Noto+Sans+KR:wght@200;300;400&display=swap">
+<meta name="theme-color" content="#070A10">
+<style>
+  /* 한 가지 세계로 고정한 화면입니다. 어둠에서 시작해 청사진으로, 끝내 집으로 갑니다. */
+  :root{
+    --night:#070A10;
+    --blue:#7D91B3;          /* 도면이 다 그려졌을 때의 바탕 */
+    --line:#C3D2E8;
+    --line-dim:rgba(195,210,232,.28);
+    --gold:#F6E3A0;
+    --cream:#EEF2F8;
+    --muted:rgba(238,242,248,.55);
+
+    /* 실제 집 */
+    --r-wall:#E9E1D1; --r-roof:#46526A; --r-win:#F4C84E;
+    --r-door:#6E4A2C; --r-step:#D2C9B7; --r-chim:#8A6A52;
+    --r-ink:#2F3A4C; --r-lawn:#6E8B58;
+
+    --script:"Italianno",cursive;
+    --sans:"Jost","Noto Sans KR",system-ui,sans-serif;
+    --kr:"Noto Sans KR","Jost",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--night);color:var(--cream);
+    font-family:var(--kr);font-weight:300;line-height:1.7;
+    transition:background-color 1.6s ease;
+    overscroll-behavior:none;
+  }
+  /* 종이 결 — 참고 이미지의 바랜 질감 */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.5;
+    background:
+      repeating-linear-gradient(107deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px),
+      repeating-linear-gradient(11deg,rgba(0,0,0,.05) 0 1px,transparent 1px 7px);
+  }
+  .view[hidden]{display:none!important}
+
+  /* 도면이 완성되면 바탕이 밝아집니다. 글자색을 통째로 뒤집어야 읽힙니다. */
+  body.bright{
+    --gold:#8A6714; --cream:#28334A; --muted:rgba(40,51,74,.66);
+    --line:#5B6E8C; --line-dim:rgba(91,110,140,.3);
+  }
+  .mark .w,.mark .h,.cta,.verse{transition:color 1.8s ease,border-color 1.8s ease}
+
+  /* ══ 집 화면 ══ */
+  #view-house{
+    min-height:100svh;display:flex;flex-direction:column;
+    padding:max(20px,env(safe-area-inset-top)) 20px max(22px,env(safe-area-inset-bottom));
+    gap:8px;
+  }
+  .mark{text-align:center;flex:0 0 auto;padding-top:6px}
+  .mark .w{
+    font-family:var(--script);font-size:clamp(58px,17vw,104px);line-height:.78;
+    color:var(--gold);display:block;margin-bottom:-.12em
+  }
+  .mark .h{
+    font-family:var(--sans);font-weight:200;font-size:clamp(26px,8.4vw,50px);
+    letter-spacing:.14em;color:var(--gold);display:block;padding-left:.14em
+  }
+  .stage{
+    flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center
+  }
+  .stage svg{width:100%;height:auto;max-height:100%;display:block}
+  .verse{
+    flex:0 0 auto;text-align:center;margin:10px 0 0;font-size:12.5px;line-height:1.75;
+    color:var(--muted);letter-spacing:.01em;max-width:34ch;margin-inline:auto;
+    transition:color 1.6s ease
+  }
+  .verse em{display:block;font-style:normal;font-family:var(--sans);font-size:11px;
+            letter-spacing:.1em;margin-top:6px;opacity:.72}
+
+  .cta{
+    flex:0 0 auto;margin-top:14px;width:100%;min-height:56px;
+    font-family:var(--kr);font-weight:300;font-size:16px;letter-spacing:.06em;
+    color:var(--gold);background:transparent;border:1px solid var(--gold);
+    border-radius:2px;cursor:pointer;
+    transition:background-color .3s ease,color .3s ease
+  }
+  .cta:active{background:var(--gold);color:#241D06}
+
+  /* ══ 폼 ══ */
+  #view-form,#view-done{
+    min-height:100svh;display:flex;flex-direction:column;
+    padding:max(18px,env(safe-area-inset-top)) 20px max(22px,env(safe-area-inset-bottom));
+  }
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto}
+  .back{
+    background:none;border:none;color:var(--muted);font-family:var(--sans);
+    font-size:12px;letter-spacing:.12em;cursor:pointer;padding:10px 2px;min-height:44px
+  }
+  .sheet{flex:1 1 auto;display:flex;flex-direction:column;gap:26px;padding:18px 0 4px;min-height:0}
+  .sheet h1{
+    font-family:var(--sans);font-weight:200;font-size:26px;letter-spacing:.02em;
+    margin:0;line-height:1.35
+  }
+  .sheet h1 b{font-weight:400;color:var(--gold)}
+  .lede{margin:0;font-size:13.5px;color:var(--muted);line-height:1.75}
+
+  .field{display:flex;flex-direction:column;gap:10px}
+  .field label{
+    font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gold);opacity:.9
+  }
+  .field .sub{font-size:12px;color:var(--muted);margin:-4px 0 0}
+  textarea,input[type=text],input[type=number]{
+    font-family:var(--kr);font-weight:300;font-size:16px;color:var(--cream);
+    background:rgba(255,255,255,.04);border:none;border-bottom:1px solid rgba(195,210,232,.3);
+    border-radius:0;padding:12px 2px;width:100%;resize:vertical;line-height:1.7
+  }
+  textarea::placeholder,input::placeholder{color:rgba(238,242,248,.3)}
+  textarea:focus,input:focus{outline:none;border-bottom-color:var(--gold);background:rgba(255,255,255,.07)}
+  textarea{min-height:92px}
+
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .chip{
+    min-height:52px;font-family:var(--kr);font-weight:300;font-size:15px;
+    color:var(--cream);background:transparent;border:1px solid rgba(195,210,232,.28);
+    border-radius:2px;cursor:pointer;transition:all .2s ease
+  }
+  .chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:rgba(246,227,160,.09)}
+  .custom{display:flex;align-items:baseline;gap:10px}
+  .custom input{max-width:110px;text-align:right}
+  .custom span{font-size:14px;color:var(--muted)}
+  .custom[hidden]{display:none}
+
+  .submit{
+    flex:0 0 auto;margin-top:8px;width:100%;min-height:56px;
+    font-family:var(--kr);font-weight:300;font-size:16px;letter-spacing:.06em;
+    color:#241D06;background:var(--gold);border:none;border-radius:2px;cursor:pointer
+  }
+  .submit[disabled]{opacity:.45;cursor:progress}
+  .note{margin:0;font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+  .alert{
+    margin:0;font-size:13px;line-height:1.7;color:var(--gold);
+    border-left:1px solid var(--gold);padding:9px 12px;background:rgba(246,227,160,.07)
+  }
+  .alert[hidden]{display:none}
+  .alert.bad{color:#F4B9A8;border-color:#C4614A;background:rgba(196,97,74,.1)}
+
+  /* ══ 완료 ══ */
+  #view-done{justify-content:center;text-align:center;gap:22px}
+  .done-mark{font-family:var(--script);font-size:64px;color:var(--gold);line-height:.9}
+  .done-msg{margin:0;font-size:17px;line-height:1.85}
+  .done-sub{margin:0;font-size:13.5px;color:var(--muted);line-height:1.8;max-width:30ch;margin-inline:auto}
+  .done-actions{display:flex;flex-direction:column;gap:11px;margin-top:6px}
+
+  /* ══ 도면 ══ */
+  .grid-bg line{stroke:var(--line);stroke-width:.4}
+  #house path{
+    fill:transparent;stroke:var(--line);stroke-width:1.1;
+    stroke-linecap:square;stroke-linejoin:miter;
+    transition:fill 2.4s ease,stroke 2.4s ease,stroke-width 2.4s ease
+  }
+  #house path.thin{stroke-width:.7}
+  #glow{transition:opacity 2.4s ease}
+
+  /* 완성 — 실제 집.
+     기본 규칙이 #house path 라 특이도가 높습니다. 여기서도 #house 를 붙여야 이깁니다. */
+  svg.real .grid-bg{opacity:0}
+  svg.real #glow{opacity:1}
+  svg.real #house path{stroke:var(--r-ink);stroke-width:.8}
+  svg.real #house path.wall{fill:var(--r-wall)}
+  svg.real #house path.roof,
+  svg.real #house path.dormer{fill:var(--r-roof)}
+  svg.real #house path.chim{fill:var(--r-chim)}
+  svg.real #house path.win{fill:var(--r-win)}
+  svg.real #house path.door{fill:var(--r-door)}
+  svg.real #house path.step{fill:var(--r-step)}
+  svg.real #house path.cornice{fill:#D8CFBD}
+  svg.real #house path.mull{stroke:rgba(47,58,76,.5)}
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition-duration:.01ms!important;animation:none!important}
+  }
+  @media (min-width:700px){
+    #view-house,#view-form,#view-done{max-width:520px;margin-inline:auto}
+    .stage svg{max-height:56svh}
+  }
+</style>
+
+<!-- ══════════ 집 ══════════ -->
+<section class="view" id="view-house">
+  <div class="mark">
+    <span class="w">Welcome</span>
+    <span class="h">HOME</span>
+  </div>
+
+  <p class="verse" id="verse">
+    그러나 그때는 하나님에게서 멀리 떨어져 있던 여러분이 이제는
+    그리스도 예수 안에서 그리스도의 피로 가까워졌습니다
+    <em>에베소서 2:13</em>
+  </p>
+
+  <div class="stage">
+    <svg id="blueprint" viewBox="0 44 400 268" preserveAspectRatio="xMidYMid meet"
+         role="img" aria-labelledby="bp-title bp-desc">
+      <title id="bp-title">기도로 짓는 집</title>
+      <desc id="bp-desc">기도 시간이 쌓일수록 어둠 속에서 집의 도면이 아래에서 위로 한 획씩 그려집니다.</desc>
+
+      <defs>
+        <radialGradient id="g-glow" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#F4C84E" stop-opacity=".5"/>
+          <stop offset="1" stop-color="#F4C84E" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <g id="glow" opacity="0"></g>
+
+      <g class="grid-bg" id="grid" opacity="0"></g>
+      <g id="house"></g>
+    </svg>
+  </div>
+
+  <button class="cta" type="button" id="pray-open">기도로 함께 짓기</button>
+</section>
+
+<!-- ══════════ 기도 ══════════ -->
+<section class="view" id="view-form" hidden>
+  <div class="top">
+    <button class="back" type="button" id="form-back">&larr; 돌아가기</button>
+  </div>
+
+  <div class="sheet">
+    <div>
+      <h1>이 집은 <b>기도</b>로 지어집니다.</h1>
+      <p class="lede">드리실 기도의 제목과, 그 가운데 주신 마음의 감동을 남겨주세요.
+        드린 시간만큼 도면의 선이 한 겹 더 그려집니다.</p>
+    </div>
+
+    <p class="alert" id="form-alert" hidden></p>
+
+    <div class="field">
+      <label for="f-topic">기도제목</label>
+      <textarea id="f-topic" maxlength="500" placeholder="무엇을 위해 기도하시겠습니까?"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="f-heart">마음의 감동</label>
+      <p class="sub">선택 — 기도 중에 주신 마음이 있다면 적어주세요.</p>
+      <textarea id="f-heart" maxlength="500" placeholder=""></textarea>
+    </div>
+
+    <div class="field">
+      <label>기도 시간</label>
+      <div class="chips" id="chips"></div>
+      <div class="custom" id="custom" hidden>
+        <input type="number" id="f-hours" min="0.5" max="100" step="0.5" inputmode="decimal">
+        <span>시간</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-name">이름</label>
+      <p class="sub">선택</p>
+      <input type="text" id="f-name" maxlength="30" autocomplete="off">
+    </div>
+
+    <button class="submit" type="button" id="f-submit">기도 올려드리기</button>
+    <p class="note">남겨주신 기도제목은 기도팀이 함께 품습니다.</p>
+  </div>
+</section>
+
+<!-- ══════════ 완료 ══════════ -->
+<section class="view" id="view-done" hidden>
+  <div class="done-mark">Amen</div>
+  <p class="done-msg">기도가 더해졌습니다.</p>
+  <p class="done-sub" id="done-sub">벽 한 줄이 더 올라갔습니다. 함께 드린 기도가 이 집을 세웁니다.</p>
+  <div class="done-actions">
+    <button class="cta" type="button" id="done-again">한 번 더 기도하기</button>
+    <button class="cta" type="button" id="done-home" style="border-color:rgba(195,210,232,.3);color:var(--muted)">집 보러 가기</button>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ═══════ 설정 ═══════
+     SERVER_URL: Google Apps Script 웹앱 주소 (server/Code.gs 참고)
+     SUPABASE:   Supabase 프로젝트 URL 과 anon 키
+     둘 다 비우면 이 기기에만 쌓이는 데모로 동작합니다. */
+  var SERVER_URL = "";
+  var SUPABASE   = { url: "", anonKey: "" };
+  var GOAL_HOURS = 1000;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var qs = new URLSearchParams(location.search);
+  try {
+    if (qs.get("server")) localStorage.setItem("hb.server", qs.get("server"));
+    if (!SERVER_URL) SERVER_URL = localStorage.getItem("hb.server") || "";
+    if (qs.get("sb")) localStorage.setItem("hb.sb", qs.get("sb"));
+    if (!SUPABASE.url){
+      var sb = (localStorage.getItem("hb.sb") || "").split(",");
+      if (sb.length === 2){ SUPABASE.url = sb[0].trim(); SUPABASE.anonKey = sb[1].trim(); }
+    }
+  } catch(e){}
+
+  var state = { hours: 0, ready: false };
+
+  /* ═══════ 집의 설계 ═══════
+     a,b = 전체 진행도(0~1) 중 이 선이 그려지는 구간.
+     아래에서 위로 — 지반, 벽, 창, 문, 처마, 지붕, 굴뚝 순서입니다. */
+  var GROUND = 300;
+
+  function win(x, w, y, h, arch){
+    var r = w / 2, top = y;
+    if (arch) return "M" + x + " " + (y + h) + " V" + (top + r) +
+                     " A" + r + " " + r + " 0 0 1 " + (x + w) + " " + (top + r) +
+                     " V" + (y + h) + " Z";
+    return "M" + x + " " + (y + h) + " V" + y + " H" + (x + w) + " V" + (y + h) + " Z";
+  }
+
+  var LOW  = [102, 140, 234, 272];   // 본채 1층 창 x
+  var UP   = [102, 140, 234, 272];   // 2층 창 x
+  var PARTS = [];
+
+  function add(d, cls, a, b){ PARTS.push({ d: d, cls: cls || "", a: a, b: b }); }
+
+  /* 지반과 기단 */
+  add("M10 300 H390", "thin", 0.000, 0.035);
+  add("M40 288 H360", "thin", 0.035, 0.060);
+
+  /* 본채와 날개채 */
+  add("M90 300 V150 H310 V300 Z",  "wall", 0.060, 0.170);
+  add("M40 300 V205 H90 V300 Z",   "wall", 0.170, 0.215);
+  add("M360 300 V205 H310 V300 Z", "wall", 0.170, 0.215);
+  add("M34 205 H96",  "thin", 0.215, 0.235);
+  add("M304 205 H366","thin", 0.215, 0.235);
+
+  /* 1층 창 */
+  LOW.forEach(function(x, i){
+    add(win(x, 26, 236, 46, false), "win", 0.245 + i * 0.026, 0.271 + i * 0.026);
+  });
+  add(win(52, 26, 236, 46, false),  "win", 0.349, 0.372);
+  add(win(322, 26, 236, 46, false), "win", 0.349, 0.372);
+
+  /* 현관 — 계단, 박공, 아치문 */
+  add("M164 296 H236 V300 H164 Z", "step", 0.378, 0.396);
+  add("M170 292 H230 V296 H170 Z", "step", 0.396, 0.412);
+  add("M176 288 H224 V292 H176 Z", "step", 0.412, 0.428);
+  add("M185 288 V247 A15 15 0 0 1 215 247 V288 Z", "door", 0.428, 0.474);
+  add("M176 247 L200 232 L224 247", "", 0.474, 0.500);
+
+  /* 2층 창과 발코니 */
+  UP.forEach(function(x, i){
+    add(win(x, 26, 170, 46, true), "win", 0.510 + i * 0.026, 0.536 + i * 0.026);
+  });
+  add(win(187, 26, 170, 46, true), "win", 0.614, 0.642);
+  add("M180 216 H220 V224 H180 Z", "thin", 0.642, 0.660);
+
+  /* 처마 */
+  add("M82 152 H318 V144 H82 Z", "cornice", 0.660, 0.706);
+
+  /* 지붕 */
+  add("M82 144 L108 92 H292 L318 144 Z", "roof", 0.706, 0.830);
+
+  /* 지붕창 */
+  [140, 200, 260].forEach(function(c, i){
+    add("M" + (c-12) + " 122 V106 L" + c + " 96 L" + (c+12) + " 106 V122 Z",
+        "dormer", 0.830 + i * 0.030, 0.860 + i * 0.030);
+  });
+
+  /* 굴뚝 */
+  add("M120 94 V58 H134 V94 Z", "chim", 0.920, 0.950);
+  add("M266 94 V58 H280 V94 Z", "chim", 0.920, 0.950);
+  add("M116 58 H138", "thin", 0.950, 0.962);
+  add("M262 58 H284", "thin", 0.950, 0.962);
+
+  /* 창살과 문살 — 마지막 한 겹 */
+  function mull(x, w, y, h){
+    add("M" + (x + w/2) + " " + y + " V" + (y + h), "thin mull", 0.962, 1.000);
+    add("M" + x + " " + (y + h * 0.42) + " H" + (x + w), "thin mull", 0.962, 1.000);
+  }
+  LOW.forEach(function(x){ mull(x, 26, 236, 46); });
+  UP.forEach(function(x){ mull(x, 26, 176, 40); });
+  mull(187, 26, 176, 40); mull(52, 26, 236, 46); mull(322, 26, 236, 46);
+  add("M200 288 V240", "thin mull", 0.962, 1.000);
+  [140, 200, 260].forEach(function(c){
+    add("M" + (c-6) + " 120 V110 H" + (c+6) + " V120", "thin", 0.962, 1.000);
+  });
+
+  /* ═══════ 그리기 ═══════ */
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var nodes = [];
+
+  function buildHouse(){
+    var g = $("house");
+    PARTS.forEach(function(p){
+      var el = document.createElementNS(SVGNS, "path");
+      el.setAttribute("d", p.d);
+      el.setAttribute("pathLength", "1");
+      if (p.cls) el.setAttribute("class", p.cls);
+      el.style.strokeDasharray = "1";
+      el.style.strokeDashoffset = "1";
+      g.appendChild(el);
+      nodes.push({ el: el, a: p.a, b: p.b });
+    });
+
+    var glow = $("glow");
+    [[102,236],[140,236],[234,236],[272,236],[52,236],[322,236],
+     [102,176],[140,176],[234,176],[272,176],[187,176]].forEach(function(w){
+      var c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("cx", w[0] + 13); c.setAttribute("cy", w[1] + 22);
+      c.setAttribute("r", 34); c.setAttribute("fill", "url(#g-glow)");
+      glow.appendChild(c);
+    });
+
+    var grid = $("grid");
+    for (var x = 0; x <= 400; x += 25){
+      var v = document.createElementNS(SVGNS, "line");
+      v.setAttribute("x1", x); v.setAttribute("y1", 0);
+      v.setAttribute("x2", x); v.setAttribute("y2", 330);
+      grid.appendChild(v);
+    }
+    for (var y = 0; y <= 330; y += 25){
+      var h = document.createElementNS(SVGNS, "line");
+      h.setAttribute("x1", 0);   h.setAttribute("y1", y);
+      h.setAttribute("x2", 400); h.setAttribute("y2", y);
+      grid.appendChild(h);
+    }
+  }
+
+  function clamp(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+  function lerpHex(c1, c2, t){
+    var a = [parseInt(c1.substr(1,2),16), parseInt(c1.substr(3,2),16), parseInt(c1.substr(5,2),16)];
+    var b = [parseInt(c2.substr(1,2),16), parseInt(c2.substr(3,2),16), parseInt(c2.substr(5,2),16)];
+    return "rgb(" + a.map(function(v,i){ return Math.round(v + (b[i]-v)*t); }).join(",") + ")";
+  }
+
+  function render(){
+    var p = GOAL_HOURS > 0 ? clamp(state.hours / GOAL_HOURS) : 0;
+    var done = p >= 1;
+
+    nodes.forEach(function(n){
+      var local = n.b > n.a ? clamp((p - n.a) / (n.b - n.a)) : (p >= n.b ? 1 : 0);
+      n.el.style.strokeDashoffset = String(1 - local);
+      n.el.style.opacity = local > 0 ? "1" : "0";
+    });
+
+    /* 어둠에서 청사진 바탕으로 */
+    document.body.style.backgroundColor = lerpHex("#070A10", "#7D91B3", Math.pow(p, 0.75));
+    $("grid").style.opacity = done ? "0" : String((0.06 + p * 0.10).toFixed(3));
+    /* 어두운 구간에서는 글자를 조금씩 또렷하게, 완성되면 토큰 자체를 뒤집습니다. */
+    document.body.classList.toggle("bright", done);
+    $("verse").style.color = done ? "" : "rgba(238,242,248," + (0.5 + p * 0.34).toFixed(3) + ")";
+
+    $("blueprint").classList.toggle("real", done);
+    if (done) document.body.style.backgroundColor = "#C6D3E4";
+  }
+
+  /* ═══════ 저장소 ═══════ */
+  var Store = { mode: "none" };
+
+  function alertForm(msg, bad){
+    var n = $("form-alert");
+    n.classList.toggle("bad", !!bad);
+    if (!msg){ n.hidden = true; n.textContent = ""; return; }
+    n.hidden = false; n.textContent = msg;
+  }
+  function short(e){
+    var m = (e && e.message) ? String(e.message) : "";
+    return m.length > 110 ? m.slice(0, 110) + "…" : m;
+  }
+
+  function sumHours(rows){
+    return rows.reduce(function(a, r){ return a + (Number(r.hours) || 0); }, 0);
+  }
+  function setHours(h){ state.hours = h; state.ready = true; render(); }
+
+  /* Apps Script */
+  function restRead(r){
+    return r.text().then(function(t){
+      var s = (t || "").trim();
+      if (s.charAt(0) === "{" || s.charAt(0) === "[") {
+        try { return JSON.parse(s); } catch(e){ throw new Error("응답을 해석하지 못했습니다 (HTTP " + r.status + ")"); }
+      }
+      if (/accounts\.google\.com|ServiceLogin/i.test(s))
+        throw new Error("Apps Script 배포 권한이 '모든 사용자'가 아닙니다.");
+      throw new Error("서버가 JSON 을 돌려주지 않았습니다 (HTTP " + r.status + ")");
+    });
+  }
+  function restPoll(){
+    fetch(SERVER_URL + (SERVER_URL.indexOf("?") < 0 ? "?" : "&") + "action=total&t=" + Date.now(),
+          { redirect: "follow" })
+      .then(restRead)
+      .then(function(j){
+        if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "서버가 요청을 거절했습니다.");
+        setHours(Number(j.hours) || 0);
+      })
+      .catch(function(){ /* 화면은 마지막 상태를 유지합니다 */ });
+  }
+
+  /* Supabase */
+  function sbHead(extra){
+    var h = { apikey: SUPABASE.anonKey, Authorization: "Bearer " + SUPABASE.anonKey };
+    if (extra) Object.keys(extra).forEach(function(k){ h[k] = extra[k]; });
+    return h;
+  }
+  function sbRest(path){ return SUPABASE.url.replace(/\/+$/, "") + "/rest/v1/" + path; }
+  function sbPoll(){
+    fetch(sbRest("prayer_hours?select=hours&limit=5000"), { headers: sbHead() })
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if (Array.isArray(j)) setHours(sumHours(j)); })
+      .catch(function(){});
+  }
+
+  var LOCAL_KEY = "hb.prayers";
+  function localRead(){
+    try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); } catch(e){ return []; }
+  }
+
+  Store.add = function(rec){
+    if (Store.mode === "rest")
+      return fetch(SERVER_URL, {
+        method: "POST", redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "add", topic: rec.topic, heart: rec.heart,
+                               hours: rec.hours, name: rec.name })
+      }).then(restRead).then(function(j){
+        if (!j || j.ok !== true) throw new Error(j && j.error ? j.error : "저장에 실패했습니다.");
+        restPoll();
+      });
+
+    if (Store.mode === "supabase")
+      return fetch(sbRest("prayers"), {
+        method: "POST",
+        headers: sbHead({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+        body: JSON.stringify([{ topic: rec.topic, heart: rec.heart,
+                                hours: rec.hours, name: rec.name, ts: Date.now() }])
+      }).then(function(r){
+        if (!r.ok) return r.json().then(function(j){ throw new Error((j && j.message) || "저장 실패"); });
+        sbPoll();
+      });
+
+    if (Store.mode === "db")
+      return Store.db.collection("prayers").add({
+        topic: rec.topic, heart: rec.heart, hours: rec.hours,
+        name: rec.name, ts: Date.now()
+      });
+
+    var list = localRead();
+    list.push({ topic: rec.topic, heart: rec.heart, hours: rec.hours, name: rec.name, ts: Date.now() });
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); } catch(e){}
+    setHours(sumHours(list));
+    return Promise.resolve();
+  };
+
+  function startStore(){
+    if (SERVER_URL){
+      Store.mode = "rest"; restPoll();
+      setInterval(restPoll, 6000);
+      window.addEventListener("focus", restPoll);
+      return;
+    }
+    if (SUPABASE.url && SUPABASE.anonKey){
+      Store.mode = "supabase"; sbPoll();
+      setInterval(sbPoll, 6000);
+      window.addEventListener("focus", sbPoll);
+      return;
+    }
+    var c = window.claude;
+    if (c && typeof c.use === "function"){
+      c.use("db").then(function(db){
+        if (!db) return goLocal();
+        Store.mode = "db"; Store.db = db;
+        db.collection("prayers").limit(1000).onSnapshot(function(snap){
+          setHours(sumHours(snap.docs.map(function(d){ return d.data() || {}; })));
+        }, function(){});
+      }, goLocal);
+      return;
+    }
+    goLocal();
+  }
+  function goLocal(){
+    Store.mode = "local";
+    setHours(sumHours(localRead()));
+  }
+
+  /* ═══════ 시간 선택 ═══════ */
+  var CHOICES = [
+    { h: 0.5, label: "30분" }, { h: 1, label: "1시간" }, { h: 2, label: "2시간" },
+    { h: 3, label: "3시간" },  { h: 5, label: "5시간" }, { h: 0, label: "직접 입력" }
+  ];
+  var picked = 1;
+
+  function buildChips(){
+    var box = $("chips");
+    CHOICES.forEach(function(c){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = c.label;
+      b.setAttribute("aria-pressed", String(c.h === picked));
+      b.addEventListener("click", function(){
+        picked = c.h;
+        Array.prototype.forEach.call(box.children, function(n, i){
+          n.setAttribute("aria-pressed", String(CHOICES[i].h === picked));
+        });
+        $("custom").hidden = c.h !== 0;
+        if (c.h === 0) $("f-hours").focus();
+      });
+      box.appendChild(b);
+    });
+  }
+  function chosenHours(){
+    if (picked !== 0) return picked;
+    var v = parseFloat($("f-hours").value);
+    return isFinite(v) ? v : 0;
+  }
+
+  /* ═══════ 화면 전환 ═══════ */
+  function show(which){
+    ["house", "form", "done"].forEach(function(v){
+      $("view-" + v).hidden = (v !== which);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  $("pray-open").addEventListener("click", function(){ alertForm(""); show("form"); });
+  $("form-back").addEventListener("click", function(){ show("house"); });
+  $("done-home").addEventListener("click", function(){ show("house"); });
+  $("done-again").addEventListener("click", function(){
+    $("f-topic").value = ""; $("f-heart").value = "";
+    alertForm(""); show("form"); $("f-topic").focus();
+  });
+
+  $("f-submit").addEventListener("click", function(){
+    var topic = $("f-topic").value.trim();
+    var heart = $("f-heart").value.trim();
+    var name  = $("f-name").value.trim();
+    var hours = chosenHours();
+
+    if (!topic){ alertForm("기도제목을 적어주세요.", true); $("f-topic").focus(); return; }
+    if (!(hours > 0)){ alertForm("기도 시간을 골라주세요.", true); return; }
+    if (hours > 100){ alertForm("한 번에 올릴 수 있는 시간은 100시간까지입니다.", true); return; }
+
+    var btn = $("f-submit");
+    btn.disabled = true; btn.textContent = "올리는 중…";
+    alertForm("");
+
+    Store.add({ topic: topic, heart: heart, hours: hours, name: name })
+      .then(function(){
+        if (Store.mode === "local" || Store.mode === "db") { /* 폴링 없이 바로 반영됩니다 */ }
+        show("done");
+      })
+      .catch(function(e){ alertForm(short(e) || "저장에 실패했습니다. 다시 시도해주세요.", true); })
+      .then(function(){ btn.disabled = false; btn.textContent = "기도 올려드리기"; });
+  });
+
+  /* ═══════ 시작 ═══════ */
+  buildHouse();
+  buildChips();
+  render();
+  startStore();
+})();
+</script>
