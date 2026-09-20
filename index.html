@@ -95,6 +95,19 @@
   .status.done{color:var(--gold)}
   .overflow-note{grid-column:1/-1;margin:-8px 0 0;font-size:14px;color:var(--grey)}
 
+  /* ── 전체화면 버튼 — 빔프로젝터에서는 평소 숨어 있습니다 ── */
+  .fsbtn{
+    position:fixed;right:14px;bottom:14px;z-index:100;
+    font-family:var(--px);font-size:9px;line-height:1.4;
+    background:var(--panel);color:var(--white);border:3px solid var(--white);
+    border-radius:0;padding:10px 12px;cursor:pointer;
+    opacity:.8;transition:opacity .35s ease
+  }
+  .fsbtn:hover{opacity:1;background:#1C1C38}
+  .fsbtn.idle{opacity:0;pointer-events:none}
+  .fsbtn[hidden]{display:none}
+  body.on-invite .fsbtn{display:none}
+
   /* ── 16:9 무대 — 빔프로젝터 한 화면에 전부 담깁니다 ── */
   .recent{display:none}
   @media (min-width:860px){
@@ -225,6 +238,8 @@
     *{animation:none!important;transition-duration:.01ms!important}
   }
 </style>
+
+<button class="fsbtn" type="button" id="fsbtn" hidden>[ ] 전체화면</button>
 
 <div class="wrap">
 
@@ -1180,10 +1195,58 @@
   }
   window.addEventListener("resize", fitStage);
 
+  /* ── 전체화면 ── */
+  var fsEl = document.documentElement;
+  function fsSupported(){
+    return !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+  }
+  function fsActive(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function fsToggle(){
+    if (fsActive()){
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen).call(fsEl);
+    }
+  }
+  function fsLabel(){
+    $("fsbtn").textContent = fsActive() ? "[X] 나가기" : "[ ] 전체화면";
+  }
+
+  var idleTimer = null;
+  function wakeButton(){
+    var b = $("fsbtn");
+    b.classList.remove("idle");
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(function(){ b.classList.add("idle"); }, 2600);
+  }
+
+  if (fsSupported()){
+    $("fsbtn").hidden = false;
+    $("fsbtn").addEventListener("click", fsToggle);
+    ["fullscreenchange","webkitfullscreenchange"].forEach(function(ev){
+      document.addEventListener(ev, function(){ fsLabel(); fitStage(); wakeButton(); });
+    });
+    ["mousemove","touchstart","keydown"].forEach(function(ev){
+      window.addEventListener(ev, wakeButton, { passive: true });
+    });
+    /* F 키로도 전환합니다. 입력칸에 글자를 치는 중이면 무시합니다. */
+    window.addEventListener("keydown", function(e){
+      if (e.key !== "f" && e.key !== "F") return;
+      var t = e.target && e.target.tagName;
+      if (t === "INPUT" || t === "TEXTAREA") return;
+      e.preventDefault(); fsToggle();
+    });
+    fsLabel();
+    wakeButton();
+  }
+
   function route(){
     var invite = location.hash.replace("#","") === "invite";
     $("view-board").hidden = invite;
     $("view-invite").hidden = !invite;
+    document.body.classList.toggle("on-invite", invite);
     fitStage();
     window.scrollTo(0,0);
   }
