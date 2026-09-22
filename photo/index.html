@@ -155,7 +155,7 @@
     padding:6px 0 12px
   }
   .sheet img{
-    max-width:100%;max-height:52svh;width:auto;height:auto;display:block;
+    max-width:100%;max-height:40svh;width:auto;height:auto;display:block;
     border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.6)
   }
   .qty{display:flex;align-items:center;gap:12px;justify-content:center}
@@ -181,6 +181,62 @@
   }
   .done .big{font-family:var(--sans);font-weight:200;font-size:clamp(24px,7vw,38px);letter-spacing:.2em;color:var(--gold)}
 
+  /* ── 키오스크식 선택 줄 ── */
+  .lane{display:flex;align-items:stretch;gap:8px;margin-top:9px}
+  .lane .lt{
+    flex:0 0 auto;font-family:var(--sans);font-size:9px;letter-spacing:.2em;color:var(--gold);
+    border:1px solid rgba(232,194,122,.42);border-radius:6px;padding:6px 4px;
+    writing-mode:vertical-rl;text-orientation:mixed;display:flex;align-items:center
+  }
+  .sws{
+    flex:1 1 auto;min-width:0;display:flex;gap:7px;overflow-x:auto;padding:1px 1px 4px;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent
+  }
+  .sws::-webkit-scrollbar{height:4px}
+  .sws::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:9px}
+  .sw{flex:0 0 auto;width:56px;border:0;background:transparent;padding:0;cursor:pointer}
+  .sw img{
+    width:56px;height:auto;display:block;border-radius:4px;background:#0E0E11;
+    border:2px solid transparent;transition:border-color .14s
+  }
+  .sw[aria-pressed="true"] img{border-color:var(--gold)}
+  .sw span{
+    display:block;font-size:9.5px;color:var(--muted);margin-top:4px;letter-spacing:.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center
+  }
+  .sw[aria-pressed="true"] span{color:var(--gold)}
+
+  /* ── 프레임 템플릿 ── */
+  .card.off{opacity:.38;pointer-events:none}
+  .tplprev{
+    position:relative;margin-top:11px;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;touch-action:none;user-select:none;
+    background:conic-gradient(#1c1c22 25%,#141418 0 50%,#1c1c22 0 75%,#141418 0) 0 0/16px 16px
+  }
+  .tplprev img{display:block;width:100%;height:auto}
+  .slot{
+    position:absolute;border:2px solid var(--gold);background:rgba(232,194,122,.13);
+    border-radius:3px;cursor:move
+  }
+  .slot b{
+    position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;
+    background:var(--gold);color:#15140F;font-size:11px;font-weight:500;
+    display:flex;align-items:center;justify-content:center;font-family:var(--sans)
+  }
+  .slot i{
+    position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;border-radius:50%;
+    background:var(--gold);cursor:nwse-resize;box-shadow:0 0 0 3px rgba(11,11,13,.5)
+  }
+  .tplprev.order .slot{cursor:pointer;background:rgba(232,194,122,.06)}
+  input[type=file]{
+    width:100%;font-size:12px;color:var(--muted);background:#0E0E11;
+    border:1px solid var(--line);border-radius:9px;padding:9px 10px
+  }
+  input[type=file]::file-selector-button{
+    font-family:inherit;font-size:12px;margin-right:10px;padding:6px 11px;cursor:pointer;
+    border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--gold)
+  }
+
   /* ── 인쇄용 ── */
   #printArea{display:none}
   @media print{
@@ -200,10 +256,38 @@
   </div>
 
   <div class="scroll">
-    <div class="card">
+    <div class="card" id="cardPaper">
       <h3>인화 규격</h3>
       <div class="row" id="layouts"></div>
       <p class="hint" id="layoutHint"></p>
+    </div>
+
+    <div class="card">
+      <h3>프레임 템플릿</h3>
+      <div class="row" id="tplList"></div>
+      <label class="fld" style="margin-top:11px" for="tplFile">템플릿 이미지 불러오기 (PNG 권장)</label>
+      <input type="file" id="tplFile" accept="image/png,image/jpeg,image/webp">
+      <div id="tplBody" hidden>
+        <div class="row" style="margin-top:11px">
+          <div class="grow">
+            <label class="fld" for="tplW">종이 가로 mm</label>
+            <input type="text" id="tplW" inputmode="decimal" value="101.6">
+          </div>
+          <div class="grow">
+            <label class="fld" for="tplH">종이 세로 mm</label>
+            <input type="text" id="tplH" inputmode="decimal" value="152.4">
+          </div>
+        </div>
+        <div class="tplprev" id="tplPrev"><img id="tplImg" alt="프레임 템플릿"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="chip" id="slotAdd" style="flex:0 0 auto">칸 추가</button>
+          <button class="chip" id="slotDel" style="flex:0 0 auto">마지막 칸 지우기</button>
+          <button class="chip" id="slotOrder" aria-pressed="false" style="flex:0 0 auto">순서 정하기</button>
+          <button class="chip" id="slotCopy" style="flex:0 0 auto">좌표 복사</button>
+          <button class="chip" id="tplFootBtn" aria-pressed="false" style="flex:0 0 auto">아래 문구 넣기</button>
+        </div>
+        <p class="hint" id="tplHint"></p>
+      </div>
     </div>
 
     <div class="card">
@@ -293,6 +377,14 @@
     <div class="s" id="printSub"></div>
   </div>
   <div class="sheet"><img id="preview" alt="인화 미리보기"></div>
+  <div class="lane">
+    <span class="lt">FILTER</span>
+    <div class="sws" id="swFilter"></div>
+  </div>
+  <div class="lane" style="margin-bottom:12px">
+    <span class="lt">BACKGROUND</span>
+    <div class="sws" id="swFrame"></div>
+  </div>
   <div class="qty">
     <button id="minus" aria-label="한 장 줄이기">−</button>
     <span class="n" id="copies">1</span><span class="u">장</span>
@@ -302,7 +394,7 @@
   <div class="btns">
     <button class="btn ghost" id="backBtn" style="flex:1.15 1 0">다시 고르기</button>
     <button class="btn ghost" id="saveBtn" style="flex:.8 1 0">저장</button>
-    <button class="btn solid" id="printBtn" style="flex:1.5 1 0">인쇄</button>
+    <button class="btn solid" id="printBtn" style="flex:1.5 1 0">인쇄하기</button>
   </div>
 </section>
 
@@ -325,26 +417,36 @@
   /* ══════ 규격 ══════
      종이 크기와 여백을 mm 로 적어두면 한 컷의 비율까지 여기서 전부 계산됩니다.
      panels = 같은 스트립을 종이에 몇 번 반복할지 (2면 인쇄 후 반으로 자릅니다) */
+  /* 골격은 종이 크기가 아니라 비율로 적습니다. 받은 템플릿 이미지에서 잰 값입니다.
+     x=좌우 바깥 여백, top=위 여백, gx·gy=칸 사이, foot=아래 띠. 모두 한 판(panel) 기준 비율. */
+  var SKEL = { x:.055, top:.040, gx:.024, gy:.016, foot:.134 };   // 2×2 프레임
+  var STRIP = { x:.063, top:.021, gx:0,    gy:.0144, foot:.092 }; // 4컷 스트립
+
   var PAPERS = {
+    "frame-4x6": {
+      label:"4×6인치", sub:"2×2 프레임",
+      hint:"기본 골격입니다. 바깥 테두리는 얇고, 아래에 넓은 띠가 남아 문구가 들어갑니다. 자를 필요 없이 한 장 그대로 나옵니다.",
+      paper:{w:101.6,h:152.4}, panels:1, cols:2, rows:2, m:SKEL, r:0
+    },
+    "frame-5x7": {
+      label:"5×7인치", sub:"2×2 프레임",
+      hint:"같은 골격을 5×7인치(127×178mm) 인화지에 담습니다. 받은 템플릿의 가로세로 비에 가장 가까운 규격입니다.",
+      paper:{w:127,h:178}, panels:1, cols:2, rows:2, m:SKEL, r:0
+    },
+    "frame-postcard": {
+      label:"엽서 100×148", sub:"2×2 프레임",
+      hint:"캐논 셀피 CP 시리즈의 엽서(L)용지에 같은 골격을 담습니다.",
+      paper:{w:100,h:148}, panels:1, cols:2, rows:2, m:SKEL, r:0
+    },
     "strip-4x6": {
       label:"4×6인치", sub:"2컷 스트립 ×2",
-      hint:"가장 흔한 인생네컷 규격입니다. 4×6(10×15cm) 인화지에 5×15cm 스트립이 두 장 나오고, 가운데를 자르면 둘이 나눠 가질 수 있습니다.",
-      paper:{w:101.6,h:152.4}, panels:2, cols:1, rows:4, outer:3.2, gap:2.2, foot:14
+      hint:"고전적인 세로 스트립입니다. 4×6 인화지에 5×15cm 스트립이 두 장 나오고, 가운데를 자르면 둘이 나눠 가질 수 있습니다.",
+      paper:{w:101.6,h:152.4}, panels:2, cols:1, rows:4, m:STRIP, r:.02
     },
     "strip-2x6": {
       label:"2×6인치", sub:"스트립 1장",
       hint:"DNP DS-RX1HS, 시티즌 CX-02 처럼 2×6 컷 인쇄를 지원하는 프린터용입니다. 자르지 않아도 됩니다.",
-      paper:{w:50.8,h:152.4}, panels:1, cols:1, rows:4, outer:3.2, gap:2.2, foot:14
-    },
-    "postcard": {
-      label:"엽서 100×148", sub:"스트립 ×2",
-      hint:"캐논 셀피 CP 시리즈의 엽서(L)용지 규격입니다. 인쇄 후 가운데를 자릅니다.",
-      paper:{w:100,h:148}, panels:2, cols:1, rows:4, outer:3.2, gap:2.2, foot:13
-    },
-    "grid-4x6": {
-      label:"4×6인치", sub:"2×2 세로컷",
-      hint:"한 장에 네 컷을 크게 담습니다. 세로로 길쭉한 컷이라 얼굴이 크게 나오고, 자를 필요가 없습니다.",
-      paper:{w:101.6,h:152.4}, panels:1, cols:2, rows:2, outer:5, gap:3.4, foot:13
+      paper:{w:50.8,h:152.4}, panels:1, cols:1, rows:4, m:STRIP, r:.02
     }
   };
 
@@ -366,7 +468,7 @@
   var SHOTS = 8, KEEP = 4, DPI = 300, MAXPX = 1600;
 
   var S = {
-    layout:"strip-4x6", filter:"none", frame:"white",
+    layout:"frame-4x6", filter:"none", frame:"black",
     caption:"인생네컷", withDate:true, mirror:true, countdown:3,
     copies:1, deviceId:null, stream:null,
     shots:[], picked:[], sheet:null,
@@ -374,16 +476,41 @@
     busy:false, abort:false
   };
 
-  /* ── 한 컷의 크기(mm)와 비율 ── */
-  function geom(L){
-    var panelW = L.paper.w / L.panels;
-    var cw = (panelW - 2*L.outer - (L.cols-1)*L.gap) / L.cols;
-    var ch = (L.paper.h - 2*L.outer - L.foot - (L.rows-1)*L.gap) / L.rows;
-    return { panelW:panelW, cw:cw, ch:ch, aspect:cw/ch };
+  /* 프레임 템플릿 — 내가 만든 프레임 대신 건네받은 이미지를 그대로 씁니다.
+     slots 는 종이 전체를 1 로 본 비율입니다. */
+  var TPL = {
+    on:false, img:null, url:"", name:"", alpha:false,
+    paper:{ w:101.6, h:152.4 }, slots:[], manifest:[], foot:false
+  };
+
+  /* ── 한 컷의 자리와 비율 ── */
+  function geom(Lo){
+    var m = Lo.m;
+    var panelW = Lo.paper.w / Lo.panels;
+    var cwR = (1 - 2*m.x - (Lo.cols-1)*m.gx) / Lo.cols;   // 판 너비에 대한 비율
+    var chR = (1 - m.top - m.foot - (Lo.rows-1)*m.gy) / Lo.rows;  // 종이 높이에 대한 비율
+    return {
+      panelW:panelW, cwR:cwR, chR:chR,
+      cw:cwR*panelW, ch:chR*Lo.paper.h,
+      aspect:(cwR*panelW)/(chR*Lo.paper.h)
+    };
   }
   function L(){ return PAPERS[S.layout]; }
+  function paper(){ return (TPL.on && TPL.img) ? TPL.paper : L().paper; }
+
   function applyAspect(){
-    document.documentElement.style.setProperty("--cell", geom(L()).aspect.toFixed(4));
+    var a;
+    if(TPL.on && TPL.img && TPL.slots.length){
+      var sum = 0;
+      TPL.slots.forEach(function(sl){ sum += (sl.w*TPL.paper.w) / (sl.h*TPL.paper.h); });
+      a = sum / TPL.slots.length;
+    }else{
+      a = geom(L()).aspect;
+    }
+    if(!isFinite(a) || a <= 0) a = 1;
+    document.documentElement.style.setProperty("--cell", a.toFixed(4));
+    var card = document.getElementById("cardPaper");
+    if(card) card.classList.toggle("off", !!(TPL.on && TPL.img));
   }
 
   /* ══════ 화면 전환 ══════ */
@@ -448,7 +575,8 @@
       localStorage.setItem("fourcut", JSON.stringify({
         layout:S.layout, filter:S.filter, frame:S.frame, caption:S.caption,
         withDate:S.withDate, mirror:S.mirror, countdown:S.countdown,
-        agent:S.agent.url, printer:S.agent.printer, deviceId:S.deviceId
+        agent:S.agent.url, printer:S.agent.printer, deviceId:S.deviceId,
+        tplFile:(TPL.on && TPL.file) ? TPL.file : ""
       }));
     }catch(e){}
   }
@@ -469,6 +597,8 @@
     if(p.agent) S.agent.url = String(p.agent).replace(/\/+$/, "");
     if(p.printer) S.agent.printer = p.printer;
     if(p.deviceId) S.deviceId = p.deviceId;
+    if(p.tplFile) TPL.want = p.tplFile;
+    if(q.get("frame")) TPL.want = q.get("frame");
 
     // 화면에 반영
     buildChips($("layouts"), PAPERS, function(){ return S.layout; }, function(k){
@@ -717,8 +847,11 @@
     return d.getFullYear() + "." + p(d.getMonth()+1) + "." + p(d.getDate());
   }
 
+  /* 사진 넉 장을 인화지 한 장으로. 템플릿 이미지가 켜져 있으면 그 이미지의 칸을 씁니다. */
   function compose(dpi){
-    var Lo = L(), g0 = geom(Lo), F = FRAMES[S.frame];
+    if(TPL.on && TPL.img) return composeTemplate(dpi);
+
+    var Lo = L(), g0 = geom(Lo), F = FRAMES[S.frame], m = Lo.m;
     var k = dpi / 25.4;                       // mm → px
     var cv = document.createElement("canvas");
     cv.width  = Math.round(Lo.paper.w * k);
@@ -727,37 +860,19 @@
     g.imageSmoothingQuality = "high";
     g.fillStyle = F.bg; g.fillRect(0, 0, cv.width, cv.height);
 
-    var radius = 1.0 * k;
+    var pw = cv.width / Lo.panels;                 // 한 판의 픽셀 너비
+    var cw = g0.cwR * pw, ch = g0.chR * cv.height;
+    var radius = (Lo.r || 0) * cw;
+
     for(var p=0; p<Lo.panels; p++){
-      var ox = p * g0.panelW * k;
+      var ox = p * pw;
       for(var i=0; i<KEEP; i++){
         var col = i % Lo.cols, row = Math.floor(i / Lo.cols);
-        var x = ox + (Lo.outer + col*(g0.cw + Lo.gap)) * k;
-        var y = (Lo.outer + row*(g0.ch + Lo.gap)) * k;
-        var src = S.shots[S.picked[i]].canvas;
-        drawCover(g, src, x, y, g0.cw * k, g0.ch * k, radius);
+        var x = ox + (m.x + col*(g0.cwR + m.gx)) * pw;
+        var y = (m.top + row*(g0.chR + m.gy)) * cv.height;
+        drawCover(g, S.shots[S.picked[i]].canvas, x, y, cw, ch, radius);
       }
-      // 아래쪽 문구
-      var cap = (S.caption || "").trim();
-      var foot = Lo.foot * k;
-      var baseY = cv.height - foot;
-      g.fillStyle = F.ink;
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      var cx = ox + (g0.panelW * k)/2;
-      if(cap){
-        g.font = "400 " + (3.4*k) + 'px "Noto Sans KR", "Jost", sans-serif';
-        g.letterSpacing = (0.6*k) + "px";
-        g.fillText(cap, cx, baseY + foot*(S.withDate ? .36 : .5));
-      }
-      if(S.withDate){
-        g.font = "300 " + (2.3*k) + 'px "Jost", "Noto Sans KR", sans-serif';
-        g.letterSpacing = (0.5*k) + "px";
-        g.globalAlpha = .72;
-        g.fillText(todayText(), cx, baseY + foot*(cap ? .72 : .5));
-        g.globalAlpha = 1;
-      }
-      g.letterSpacing = "0px";
+      drawFoot(g, F, ox + pw/2, cv.height, m.foot * cv.height);
     }
 
     // 자르는 선
@@ -766,12 +881,75 @@
       g.strokeStyle = F.cut; g.lineWidth = Math.max(1, .2*k);
       g.setLineDash([2.4*k, 2.4*k]);
       for(var q=1; q<Lo.panels; q++){
-        var lx = Math.round(q * g0.panelW * k) + .5;
+        var lx = Math.round(q * pw) + .5;
         g.beginPath(); g.moveTo(lx, 0); g.lineTo(lx, cv.height); g.stroke();
       }
       g.restore();
     }
     return cv;
+  }
+
+  /* 아래 띠의 문구와 날짜 */
+  function drawFoot(g, F, cx, H, foot){
+    var cap = (S.caption || "").trim();
+    if(!cap && !S.withDate) return;
+    var top = H - foot;
+    g.save();
+    g.fillStyle = F.ink; g.textAlign = "center"; g.textBaseline = "middle";
+    if(cap){
+      g.font = '400 ' + (foot*.30) + 'px "Noto Sans KR","Jost",sans-serif';
+      g.letterSpacing = (foot*.05) + "px";
+      g.fillText(cap, cx, top + foot*(S.withDate ? .40 : .52));
+    }
+    if(S.withDate){
+      g.font = '300 ' + (foot*.20) + 'px "Jost","Noto Sans KR",sans-serif';
+      g.letterSpacing = (foot*.05) + "px";
+      g.globalAlpha = .72;
+      g.fillText(todayText(), cx, top + foot*(cap ? .74 : .52));
+    }
+    g.restore();
+  }
+
+  /* 템플릿 이미지 위에 사진을 앉힙니다. 투명한 창이 있으면 사진 위로 템플릿을 한 번 더 덮어
+     테두리 장식이 사진을 가리도록 합니다. */
+  function composeTemplate(dpi){
+    var k = dpi / 25.4;
+    var cv = document.createElement("canvas");
+    cv.width  = Math.round(TPL.paper.w * k);
+    cv.height = Math.round(TPL.paper.h * k);
+    var g = cv.getContext("2d");
+    g.imageSmoothingQuality = "high";
+    g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, cv.width, cv.height);
+    if(!TPL.alpha) g.drawImage(TPL.img, 0, 0, cv.width, cv.height);
+
+    TPL.slots.forEach(function(sl, i){
+      var idx = TPL.slots.length === KEEP*2 ? Math.floor(i/2) : (i % KEEP);
+      var shot = S.shots[S.picked[idx]];
+      if(!shot) return;
+      drawCover(g, shot.canvas,
+        sl.x*cv.width, sl.y*cv.height, sl.w*cv.width, sl.h*cv.height, 0);
+    });
+
+    if(TPL.alpha) g.drawImage(TPL.img, 0, 0, cv.width, cv.height);
+
+    // 템플릿에 이미 글자가 인쇄돼 있을 수 있어, 켤 때만 아래 띠에 문구를 얹습니다.
+    if(TPL.foot && TPL.slots.length){
+      var bottom = 0;
+      TPL.slots.forEach(function(sl){ bottom = Math.max(bottom, sl.y + sl.h); });
+      var footPx = (1 - bottom) * cv.height;
+      if(footPx > cv.height*0.04) drawFoot(g, { ink: bandInk(g, cv, bottom) }, cv.width/2, cv.height, footPx);
+    }
+    return cv;
+  }
+
+  /* 아래 띠가 어두우면 밝은 글씨, 밝으면 어두운 글씨 */
+  function bandInk(g, cv, bottom){
+    try{
+      var y = Math.min(cv.height-1, Math.round((bottom + (1-bottom)/2) * cv.height));
+      var d = g.getImageData(Math.round(cv.width/2), y, 1, 1).data;
+      var lum = (d[0]*.299 + d[1]*.587 + d[2]*.114);
+      return lum < 140 ? "#F2EFE9" : "#2B2B2B";
+    }catch(e){ return "#F2EFE9"; }
   }
 
   function fontsReady(){
@@ -782,14 +960,97 @@
     ]).catch(function(){});
   }
 
-  $("toPrintBtn").onclick = function(){
-    var Lo = L();
+  /* 인화지를 다시 그려 미리보기에 겁니다. */
+  function renderSheet(){
+    var Lo = L(), pp = paper();
     $("printSub").textContent =
-      Lo.label + " · " + Lo.sub + " — " + Lo.paper.w + "×" + Lo.paper.h + "mm, " + DPI + "dpi";
+      ((TPL.on && TPL.img) ? "템플릿 " + TPL.name : Lo.label + " · " + Lo.sub) +
+      " — " + pp.w + "×" + pp.h + "mm, " + DPI + "dpi";
+    S.sheet = compose(DPI);
+    $("preview").src = S.sheet.toDataURL("image/png");
+  }
+
+  /* ── 키오스크식 FILTER / BACKGROUND 줄 ── */
+
+  function swatch(box, key, label, src, on, onPick){
+    var b = document.createElement("button");
+    b.className = "sw"; b.type = "button";
+    b.setAttribute("aria-pressed", String(on));
+    b.innerHTML = '<img alt="" src="' + src + '"><span>' + label + '</span>';
+    b.onclick = onPick;
+    box.appendChild(b);
+    return b;
+  }
+
+  /* 필터 썸네일은 지금 배경 그대로, 필터만 바꿔 작게 한 장씩 뽑습니다. */
+  function filterThumb(key){
+    var keep = S.filter;
+    S.filter = key;
+    var cv = compose(34);
+    S.filter = keep;
+    return cv.toDataURL("image/jpeg", .82);
+  }
+
+  /* 내가 그리는 프레임의 배경 미리보기 */
+  function frameThumb(key){
+    var F = FRAMES[key], m = SKEL, W = 72, H = Math.round(W * (152.4/101.6));
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var g = cv.getContext("2d");
+    g.fillStyle = F.bg; g.fillRect(0, 0, W, H);
+    var cw = (1 - 2*m.x - m.gx)/2, ch = (1 - m.top - m.foot - m.gy)/2;
+    g.fillStyle = "rgba(128,128,128,.45)";
+    for(var i=0;i<4;i++){
+      g.fillRect((m.x + (i%2)*(cw+m.gx))*W, (m.top + Math.floor(i/2)*(ch+m.gy))*H, cw*W, ch*H);
+    }
+    return cv.toDataURL("image/png");
+  }
+
+  function buildLanes(){
+    var fbox = $("swFilter"), bbox = $("swFrame");
+    fbox.innerHTML = ""; bbox.innerHTML = "";
+
+    Object.keys(FILTERS).forEach(function(k){
+      swatch(fbox, k, FILTERS[k].label, filterThumb(k), S.filter === k, function(){
+        S.filter = k; savePrefs(); renderSheet(); buildLanes(); syncSetup();
+      });
+    });
+
+    Object.keys(FRAMES).forEach(function(k){
+      swatch(bbox, k, FRAMES[k].label, frameThumb(k), (!TPL.on || !TPL.img) && S.frame === k, function(){
+        if(TPL.on) tplOff();
+        S.frame = k; savePrefs(); renderSheet(); buildLanes(); syncSetup();
+      });
+    });
+
+    TPL.manifest.forEach(function(it){
+      var on = TPL.on && TPL.img && TPL.name === (it.label || it.file);
+      swatch(bbox, it.file, it.label || it.file, "frames/" + it.file, on, function(){
+        tplLoad("frames/" + it.file, it).then(function(){
+          tplChips(); renderSheet(); buildLanes(); syncSetup();
+        }).catch(function(e){ alert(e.message || String(e)); });
+      });
+    });
+
+    if(TPL.on && TPL.img && !TPL.file){
+      swatch(bbox, "local", TPL.name, TPL.url, true, function(){});
+    }
+  }
+
+  /* 준비 화면의 칩들도 같은 값을 보여주도록 */
+  function syncSetup(){
+    [["filters", FILTERS, S.filter], ["frames", FRAMES, S.frame]].forEach(function(t){
+      var box = $(t[0]), keys = Object.keys(t[1]);
+      for(var i=0;i<box.children.length;i++){
+        box.children[i].setAttribute("aria-pressed", String(keys[i] === t[2]));
+      }
+    });
+  }
+
+  $("toPrintBtn").onclick = function(){
     $("printMsg").textContent = ""; $("printMsg").className = "msg";
     fontsReady().then(function(){
-      S.sheet = compose(DPI);
-      $("preview").src = S.sheet.toDataURL("image/png");
+      renderSheet();
+      buildLanes();
       show("s-print");
     });
   };
@@ -854,7 +1115,7 @@
 
   /* ══════ 인쇄 ══════ */
   function browserPrint(){
-    var Lo = L();
+    var Lo = { paper: paper() };
     var area = $("printArea");
     area.innerHTML = "";
     var st = document.getElementById("pageSize") || document.createElement("style");
@@ -876,7 +1137,7 @@
   }
 
   function agentPrint(){
-    var Lo = L();
+    var Lo = { paper: paper() };
     return agentFetch("/print", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -934,10 +1195,308 @@
     show("s-setup");
   };
 
+  /* ══════ 프레임 템플릿 ══════ */
+
+  /* 알파 채널에서 "뚫린 창"을 찾아 사진 자리로 씁니다. */
+  function detectHoles(img){
+    var MAXW = 360;
+    var k = Math.min(1, MAXW / (img.naturalWidth || MAXW));
+    var W = Math.max(8, Math.round((img.naturalWidth || MAXW) * k));
+    var H = Math.max(8, Math.round((img.naturalHeight || MAXW) * k));
+    var c = document.createElement("canvas"); c.width = W; c.height = H;
+    var g = c.getContext("2d", { willReadFrequently:true });
+    g.clearRect(0, 0, W, H); g.drawImage(img, 0, 0, W, H);
+    var d;
+    try{ d = g.getImageData(0, 0, W, H).data; }
+    catch(e){ return { alpha:false, slots:[] }; }   // 다른 출처의 이미지는 읽을 수 없습니다
+
+    var hole = new Uint8Array(W*H), any = false;
+    for(var i=0, q=0; i<W*H; i++, q+=4){ if(d[q+3] < 40){ hole[i] = 1; any = true; } }
+    if(!any) return { alpha:false, slots:[] };
+
+    var seen = new Uint8Array(W*H), boxes = [], stack = [];
+    for(var s0=0; s0<W*H; s0++){
+      if(!hole[s0] || seen[s0]) continue;
+      var minx=W, miny=H, maxx=0, maxy=0, n=0;
+      stack.push(s0); seen[s0] = 1;
+      while(stack.length){
+        var t = stack.pop(), tx = t % W, ty = (t - tx) / W; n++;
+        if(tx < minx) minx = tx;
+        if(tx > maxx) maxx = tx;
+        if(ty < miny) miny = ty;
+        if(ty > maxy) maxy = ty;
+        if(tx > 0   && hole[t-1] && !seen[t-1]){ seen[t-1] = 1; stack.push(t-1); }
+        if(tx < W-1 && hole[t+1] && !seen[t+1]){ seen[t+1] = 1; stack.push(t+1); }
+        if(ty > 0   && hole[t-W] && !seen[t-W]){ seen[t-W] = 1; stack.push(t-W); }
+        if(ty < H-1 && hole[t+W] && !seen[t+W]){ seen[t+W] = 1; stack.push(t+W); }
+      }
+      var bw = maxx-minx+1, bh = maxy-miny+1;
+      if(bw*bh < W*H*0.012) continue;               // 자잘한 점
+      if(bw > W*0.985 && bh > H*0.985) continue;    // 종이 전체를 두른 투명부
+      if(n < bw*bh*0.55) continue;                  // 네모가 아닌 얼룩
+      boxes.push({ x:minx/W, y:miny/H, w:bw/W, h:bh/H });
+    }
+    boxes.sort(function(a, b){
+      var dy = (a.y + a.h/2) - (b.y + b.h/2);
+      return Math.abs(dy) > 0.02 ? dy : (a.x - b.x);
+    });
+    return { alpha:true, slots:boxes };
+  }
+
+  /* 창을 못 찾았을 때의 기본 네 칸 — 받은 골격과 같은 비율입니다. */
+  function defaultSlots(){
+    var m = SKEL;
+    var cw = (1 - 2*m.x - m.gx) / 2;
+    var ch = (1 - m.top - m.foot - m.gy) / 2;
+    var out = [];
+    for(var i=0; i<4; i++){
+      out.push({
+        x: m.x + (i % 2) * (cw + m.gx),
+        y: m.top + Math.floor(i / 2) * (ch + m.gy),
+        w: cw, h: ch
+      });
+    }
+    return out;
+  }
+
+  /* 이미지 비율에 가장 가까운 인화 규격을 종이 크기로 잡아 둡니다. */
+  function guessPaper(img){
+    var r = img.naturalWidth / img.naturalHeight, best = null, gap = 9;
+    Object.keys(PAPERS).forEach(function(k){
+      var pp = PAPERS[k].paper, d = Math.abs(pp.w/pp.h - r);
+      if(d < gap){ gap = d; best = pp; }
+    });
+    return { w: best.w, h: best.h };
+  }
+
+  function tplKey(){ return "fourcut.tpl." + TPL.name; }
+  function tplSave(){
+    try{
+      localStorage.setItem(tplKey(), JSON.stringify({ paper:TPL.paper, slots:TPL.slots, foot:TPL.foot }));
+    }catch(e){}
+  }
+
+  function tplLoad(src, meta){
+    meta = meta || {};
+    return new Promise(function(res, rej){
+      var im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onload = function(){ res(im); };
+      im.onerror = function(){ rej(new Error("템플릿 이미지를 열지 못했습니다")); };
+      im.src = src;
+    }).then(function(im){
+      TPL.img = im; TPL.url = src; TPL.on = true;
+      TPL.file = meta.file || "";
+      TPL.name = meta.label || meta.file || "내 템플릿";
+
+      var found = detectHoles(im);
+      TPL.alpha = found.alpha;
+
+      var saved = null;
+      try{ saved = JSON.parse(localStorage.getItem(tplKey()) || "null"); }catch(e){}
+
+      var slots = meta.slots || (saved && saved.slots) || found.slots;
+      if(!slots || !slots.length) slots = defaultSlots();
+      TPL.slots = slots.slice(0, KEEP*2);
+      TPL.paper = meta.paper || (saved && saved.paper) || guessPaper(im);
+      TPL.foot = !!(saved && saved.foot);
+      $("tplFootBtn").setAttribute("aria-pressed", String(TPL.foot));
+
+      tplPaint();
+      $("tplHint").textContent = found.alpha
+        ? "투명한 창 " + found.slots.length + "개를 찾았습니다. 자리가 안 맞으면 네모를 끌어 옮기거나 모서리를 잡아 늘리세요."
+        : "투명한 부분이 없는 이미지라 사진을 템플릿 위에 얹습니다. 네모를 끌어 사진 자리를 맞춰 주세요.";
+      return TPL;
+    });
+  }
+
+  function tplOff(){
+    TPL.on = false; TPL.img = null; TPL.url = ""; TPL.name = "";
+    $("tplBody").hidden = true;
+    applyAspect(); savePrefs();
+  }
+
+  /* 미리보기와 네모들을 다시 그립니다. */
+  function tplPaint(){
+    $("tplBody").hidden = false;
+    $("tplImg").src = TPL.url;
+    $("tplW").value = TPL.paper.w;
+    $("tplH").value = TPL.paper.h;
+
+    var box = $("tplPrev");
+    Array.prototype.slice.call(box.querySelectorAll(".slot")).forEach(function(el){ el.remove(); });
+    TPL.slots.forEach(function(sl, i){
+      var el = document.createElement("div");
+      el.className = "slot";
+      el.style.left   = (sl.x*100) + "%";
+      el.style.top    = (sl.y*100) + "%";
+      el.style.width  = (sl.w*100) + "%";
+      el.style.height = (sl.h*100) + "%";
+      el.innerHTML = "<b>" + (TPL.slots.length === KEEP*2 ? Math.floor(i/2)+1 : (i % KEEP)+1) + "</b><i></i>";
+      el.dataset.i = i;
+      box.appendChild(el);
+    });
+    applyAspect(); savePrefs();
+  }
+
+  /* 네모 끌기 / 크기 바꾸기 / 순서 정하기 */
+  (function slotEditor(){
+    var box = $("tplPrev"), drag = null, ordering = false, seq = [];
+
+    box.addEventListener("pointerdown", function(e){
+      var el = e.target.closest(".slot");
+      if(!el) return;
+      var i = Number(el.dataset.i);
+
+      if(ordering){
+        if(seq.indexOf(i) >= 0) return;
+        seq.push(i);
+        el.querySelector("b").textContent = seq.length;
+        if(seq.length === TPL.slots.length){
+          TPL.slots = seq.map(function(k){ return TPL.slots[k]; });
+          ordering = false; seq = [];
+          box.classList.remove("order");
+          $("slotOrder").setAttribute("aria-pressed", "false");
+          tplPaint(); tplSave();
+        }
+        return;
+      }
+
+      var r = box.getBoundingClientRect();
+      drag = {
+        el:el, i:i, r:r,
+        mode: e.target.tagName === "I" ? "size" : "move",
+        px:e.clientX, py:e.clientY,
+        s:Object.assign({}, TPL.slots[i])
+      };
+      el.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    box.addEventListener("pointermove", function(e){
+      if(!drag) return;
+      var dx = (e.clientX - drag.px) / drag.r.width;
+      var dy = (e.clientY - drag.py) / drag.r.height;
+      var sl = TPL.slots[drag.i], s0 = drag.s;
+      if(drag.mode === "move"){
+        sl.x = Math.min(1 - s0.w, Math.max(0, s0.x + dx));
+        sl.y = Math.min(1 - s0.h, Math.max(0, s0.y + dy));
+      }else{
+        sl.w = Math.min(1 - sl.x, Math.max(.04, s0.w + dx));
+        sl.h = Math.min(1 - sl.y, Math.max(.04, s0.h + dy));
+      }
+      drag.el.style.left   = (sl.x*100) + "%";
+      drag.el.style.top    = (sl.y*100) + "%";
+      drag.el.style.width  = (sl.w*100) + "%";
+      drag.el.style.height = (sl.h*100) + "%";
+    });
+
+    function stop(){ if(drag){ drag = null; applyAspect(); tplSave(); savePrefs(); } }
+    box.addEventListener("pointerup", stop);
+    box.addEventListener("pointercancel", stop);
+
+    $("slotAdd").onclick = function(){
+      if(TPL.slots.length >= KEEP*2) return;
+      TPL.slots.push({ x:.3, y:.3, w:.35, h:.28 });
+      tplPaint(); tplSave();
+    };
+    $("slotDel").onclick = function(){
+      TPL.slots.pop(); tplPaint(); tplSave();
+    };
+    $("slotOrder").onclick = function(){
+      ordering = !ordering; seq = [];
+      box.classList.toggle("order", ordering);
+      $("slotOrder").setAttribute("aria-pressed", String(ordering));
+      $("tplHint").textContent = ordering
+        ? "사진이 들어갈 순서대로 네모를 하나씩 누르세요."
+        : "";
+      if(!ordering) tplPaint();
+    };
+    $("tplFootBtn").onclick = function(){
+      TPL.foot = $("tplFootBtn").getAttribute("aria-pressed") !== "true";
+      $("tplFootBtn").setAttribute("aria-pressed", String(TPL.foot));
+      tplSave();
+    };
+    $("slotCopy").onclick = function(){
+      var json = JSON.stringify({
+        file:"내파일.png",
+        label:TPL.name,
+        paper:TPL.paper,
+        slots:TPL.slots.map(function(s2){
+          return { x:+s2.x.toFixed(4), y:+s2.y.toFixed(4), w:+s2.w.toFixed(4), h:+s2.h.toFixed(4) };
+        })
+      }, null, 2);
+      var done = function(){ $("tplHint").textContent = "좌표를 복사했습니다. photo/frames/frames.json 에 붙여 넣으면 다음부터 바로 뜹니다."; };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(json).then(done, function(){ window.prompt("복사하세요", json); });
+      }else{
+        window.prompt("복사하세요", json);
+      }
+    };
+  })();
+
+  function tplSizeChanged(){
+    var w = parseFloat($("tplW").value), h = parseFloat($("tplH").value);
+    if(w > 10 && h > 10){ TPL.paper = { w:w, h:h }; applyAspect(); tplSave(); }
+  }
+  $("tplW").onchange = tplSizeChanged;
+  $("tplH").onchange = tplSizeChanged;
+
+  $("tplFile").onchange = function(){
+    var f = $("tplFile").files && $("tplFile").files[0];
+    if(!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      tplLoad(String(fr.result), { label:f.name })
+        .then(function(){ tplChips(f.name); })
+        .catch(function(e){ alert(e.message || String(e)); });
+    };
+    fr.readAsDataURL(f);
+  };
+
+  /* 목록: 사용 안 함 + frames.json 에 적어 둔 것들 + 방금 고른 파일 */
+  function tplChips(localName){
+    var box = $("tplList");
+    box.innerHTML = "";
+    var items = [{ label:"사용 안 함", sub:"직접 그린 프레임", off:true }].concat(TPL.manifest);
+    if(localName) items.push({ label:localName, sub:"내 파일", local:true });
+
+    items.forEach(function(it){
+      var b = document.createElement("button");
+      b.className = "chip"; b.type = "button";
+      var on = it.off ? !TPL.on : (TPL.on && TPL.name === (it.label || it.file));
+      b.setAttribute("aria-pressed", String(on));
+      b.innerHTML = (it.label || it.file) + (it.sub ? "<small>" + it.sub + "</small>" : "");
+      b.onclick = function(){
+        if(it.off){ tplOff(); tplChips(localName); return; }
+        if(it.local){ tplChips(localName); return; }   // 이미 불러와 있습니다
+        tplLoad("frames/" + it.file, it)
+          .then(function(){ tplChips(localName); })
+          .catch(function(e){ alert(e.message || String(e)); });
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function tplInit(){
+    tplChips();
+    fetch("frames/frames.json", { cache:"no-store" })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(list){
+        TPL.manifest = Array.isArray(list) ? list : [];
+        tplChips();
+        var want = TPL.want;
+        var pick = TPL.manifest.filter(function(it){ return it.file === want || it.label === want; })[0];
+        if(pick) return tplLoad("frames/" + pick.file, pick).then(function(){ tplChips(); });
+      })
+      .catch(function(){});
+  }
+
   /* ══════ 시작 ══════ */
   loadPrefs();
   setCopies(1);
   checkAgent();
+  tplInit();
   if(!secure()){
     $("startBtn").disabled = true;
     $("camSel").innerHTML = "<option>https 또는 localhost 에서 열어 주세요</option>";
